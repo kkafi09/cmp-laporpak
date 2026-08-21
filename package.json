@@ -1,0 +1,37 @@
+{
+  "name": "laporpak-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "LaporPak! - Agentic Intelligence Layer for Public Complaint Management",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "pnpm --filter @laporpak/web dev",
+    "dev:all": "concurrently \"pnpm run dev:api\" \"pnpm run dev:web\"",
+    "dev:web": "pnpm --filter @laporpak/web dev",
+    "dev:api": "cd apps/api && python -m uvicorn main:app --reload --port 8000",
+    "db:migrate": "cd apps/api && alembic upgrade head",
+    "db:rollback": "cd apps/api && alembic downgrade -1",
+    "db:revision": "cd apps/api && alembic revision --autogenerate",
+    "db:seed": "cd apps/api && python -c \"from app.db.init_db import init_db; init_db()\"",
+    "build": "pnpm -r run build",
+    "lint": "pnpm -r run lint"
+  },
+  "keywords": [
+    "govtech",
+    "ai-agent",
+    "sp4n-lapor",
+    "public-complaints",
+    "beui",
+    "hitl",
+    "fastapi",
+    "react"
+  ],
+  "author": "LaporPak Team",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

@@ -1,0 +1,30 @@
+# Node & Workspace
+node_modules/
+dist/
+build/
+.turbo/
+.npm/
+*.log
+
+# Docker Volumes
+docker-volume/
+*.db
+
+# Python & FastAPI
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.env
+.env.local
+.venv
+venv/
+env/
+ENV/
+*.sqlite3
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
