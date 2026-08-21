@@ -12,13 +12,16 @@ import {
   RefreshCw,
   PlusCircle,
   X,
-  FileText
+  FileText,
+  Zap, Car, Trash2
 } from 'lucide-react';
 import { URGENCY_CONFIG } from '@laporpak/shared';
 import { ComplaintTicket, UrgencyLevel } from '@laporpak/shared';
 import { fetchComplaints, submitNewComplaint, submitHitlAction } from '../services/api';
+import { useToast } from '../components/ui/Toast';
 
 export function TriageDashboard() {
+  const { toast } = useToast();
   const [tickets, setTickets] = useState<ComplaintTicket[]>([]);
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -91,14 +94,14 @@ export function TriageDashboard() {
       );
       setTimeout(() => setActionSuccessMessage(null), 4000);
     } catch (err) {
-      alert('Gagal memproses aksi disposisi. Pastikan backend API aktif.');
+      toast({ kind: 'error', title: 'Aksi disposisi gagal', message: 'Pastikan backend API aktif.' });
     }
   };
 
   const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newRawContent.trim()) {
-      alert('Isi laporan aduan tidak boleh kosong!');
+      toast({ kind: 'error', title: 'Isi laporan belum lengkap', message: 'Isi laporan aduan tidak boleh kosong.' });
       return;
     }
 
@@ -124,7 +127,7 @@ export function TriageDashboard() {
       await loadData();
       setSelectedTicketId(res.ticket_id);
     } catch (err) {
-      alert('Gagal mengirim aduan. Pastikan backend server API berjalan di port 8000.');
+      toast({ kind: 'error', title: 'Laporan gagal dikirim', message: 'Pastikan backend API berjalan di port 8000.' });
     } finally {
       setIsSubmitting(false);
     }
@@ -182,7 +185,7 @@ export function TriageDashboard() {
                 <div className="text-xl font-extrabold text-slateNavy-900">{tickets.length} Tiket</div>
               </div>
               <div className="w-9 h-9 rounded-xl bg-brand-primary-light text-brand-primary flex items-center justify-center font-bold">
-                ⚡
+                <Zap className="h-4 w-4" />
               </div>
             </div>
             <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
@@ -370,7 +373,7 @@ export function TriageDashboard() {
                   <span className="text-[10px] font-semibold text-purple-900">Entitas PII Tersensor:</span>
                   {currentTicket.security.piiDetected.map((p) => (
                     <span key={p} className="text-[9px] font-bold bg-purple-200/60 text-purple-900 px-2 py-0.5 rounded-md">
-                      🛡️ {p}
+                      <ShieldCheck className="inline h-3.5 w-3.5 text-purple-600" /> {p}
                     </span>
                   ))}
                 </div>
@@ -512,14 +515,14 @@ export function TriageDashboard() {
                     onClick={() => handleQuickTemplate('jalan')}
                     className="text-xs px-2.5 py-1 rounded-lg bg-slateNavy-100 hover:bg-slateNavy-200 text-slateNavy-800 font-semibold"
                   >
-                    🚗 Jalan Berlubang + NIK
+                    <Car className="inline h-3.5 w-3.5 text-brand-primary" /> Jalan Berlubang + NIK
                   </button>
                   <button
                     type="button"
                     onClick={() => handleQuickTemplate('sampah')}
                     className="text-xs px-2.5 py-1 rounded-lg bg-slateNavy-100 hover:bg-slateNavy-200 text-slateNavy-800 font-semibold"
                   >
-                    🗑️ Sampah Liar Pasar
+                    <Trash2 className="inline h-3.5 w-3.5 text-brand-primary" /> Sampah Liar Pasar
                   </button>
                   <button
                     type="button"

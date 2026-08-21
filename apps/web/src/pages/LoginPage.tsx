@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from '@tanstack/react-router';
-import { LogIn, Lock, User, ArrowLeft } from 'lucide-react';
+import { LogIn, Lock, User, ArrowLeft, UserRound, Building2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../components/ui/Toast';
 
 export function LoginPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
+  const { toast } = useToast();
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -14,7 +16,7 @@ export function LoginPage() {
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (!username.trim()) {
-      alert('Mohon masukkan username atau email Anda.');
+      toast({ kind: 'error', title: 'Identitas belum diisi', message: 'Mohon masukkan username atau email Anda.' });
       return;
     }
 
@@ -69,7 +71,7 @@ export function LoginPage() {
                   : 'text-slateNavy-600 hover:text-slateNavy-900'
               }`}
             >
-              👤 Akun Warga
+              <span className="inline-flex items-center gap-1"><UserRound className="h-3.5 w-3.5" /> Akun Warga</span>
             </button>
             <button
               type="button"
@@ -80,7 +82,7 @@ export function LoginPage() {
                   : 'text-slateNavy-600 hover:text-slateNavy-900'
               }`}
             >
-              🏛️ Admin ASN
+              <span className="inline-flex items-center gap-1"><Building2 className="h-3.5 w-3.5" /> Admin ASN</span>
             </button>
           </div>
 

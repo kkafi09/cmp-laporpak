@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from '@tanstack/react-router';
-import { UserPlus, User, Mail, Phone, ArrowLeft } from 'lucide-react';
+import { UserPlus, User, Mail, Phone, ArrowLeft, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../components/ui/Toast';
 
 export function RegisterPage() {
   const navigate = useNavigate();
   const { register } = useAuth();
+  const { toast } = useToast();
 
   const [name, setName] = useState('');
   const [nik, setNik] = useState('');
@@ -18,16 +20,16 @@ export function RegisterPage() {
   const handleRegister = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !email || !password) {
-      alert('Mohon lengkapi semua field wajib.');
+      toast({ kind: 'error', title: 'Form belum lengkap', message: 'Mohon lengkapi semua field wajib.' });
       return;
     }
     if (password !== confirmPassword) {
-      alert('Konfirmasi kata sandi tidak cocok.');
+      toast({ kind: 'error', title: 'Kata sandi tidak cocok', message: 'Pastikan konfirmasi kata sandi sama.' });
       return;
     }
 
     register({ name, nik, email, phone, password });
-    alert('Pendaftaran akun berhasil! Anda sekarang masuk sebagai warga terverifikasi.');
+    toast({ kind: 'success', title: 'Pendaftaran berhasil', message: 'Anda sekarang masuk sebagai warga terverifikasi.' });
     navigate({ to: '/' });
   };
 
@@ -78,7 +80,7 @@ export function RegisterPage() {
                 className="w-full px-3.5 py-2 text-xs bg-slateNavy-50 border border-slate-200 rounded-xl font-mono focus:ring-2 focus:ring-brand-primary/30"
               />
               <span className="text-[10px] text-purple-700 font-medium mt-0.5 block">
-                🛡️ NIK Anda otomatis dienkripsi dan disensor sebelum diproses LLM.
+                <ShieldCheck className="inline h-3.5 w-3.5 mr-1 text-purple-600" /> NIK Anda otomatis dienkripsi dan disensor sebelum diproses LLM.
               </span>
             </div>
 

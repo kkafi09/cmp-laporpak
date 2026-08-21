@@ -1,8 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Settings, Shield, Cpu, Key, Check, Sliders } from 'lucide-react';
 import { fetchSettings, saveSettings } from '../services/api';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/Select';
+import { useToast } from '../components/ui/Toast';
+import { Checkbox } from '../components/ui/Checkbox';
 
 export function SettingsPage() {
+  const { toast } = useToast();
   const [primaryModel, setPrimaryModel] = useState('gemini-1.5-pro');
   const [geminiApiKey, setGeminiApiKey] = useState('AIzaSyD-••••••••••••••••••••••••');
   const [dedupThreshold, setDedupThreshold] = useState(0.65);
@@ -33,7 +37,7 @@ export function SettingsPage() {
       setIsSaved(true);
       setTimeout(() => setIsSaved(false), 3000);
     } catch (err) {
-      alert('Gagal menyimpan pengaturan ke database.');
+      toast({ kind: 'error', title: 'Pengaturan gagal disimpan', message: 'Periksa koneksi backend lalu coba lagi.' });
     } finally {
       setIsSaving(false);
     }
@@ -66,14 +70,7 @@ export function SettingsPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="text-xs font-bold text-slateNavy-700">Primary Reasoning Engine</label>
-              <select
-                value={primaryModel}
-                onChange={(e) => setPrimaryModel(e.target.value)}
-                className="w-full mt-1.5 p-2.5 text-xs bg-slateNavy-50 border border-slate-200 rounded-xl font-semibold"
-              >
-                <option value="gemini-1.5-pro">Google Gemini 1.5 Pro (Recommended)</option>
-                <option value="gemini-1.5-flash">Google Gemini 1.5 Flash (Ultra-Fast)</option>
-              </select>
+              <div className="mt-1.5"><Select value={primaryModel} onValueChange={setPrimaryModel}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="gemini-1.5-pro">Google Gemini 1.5 Pro (Recommended)</SelectItem><SelectItem value="gemini-1.5-flash">Google Gemini 1.5 Flash (Ultra-Fast)</SelectItem></SelectContent></Select></div>
             </div>
             <div>
               <label className="text-xs font-bold text-slateNavy-700">Google Gemini API Key</label>
@@ -105,12 +102,7 @@ export function SettingsPage() {
                 Sensor otomatis NIK 16-digit, Nomor Telepon, Email, dan data perbankan sebelum payload dikirim ke API LLM publik.
               </p>
             </div>
-            <input
-              type="checkbox"
-              checked={enablePiiMasking}
-              onChange={(e) => setEnablePiiMasking(e.target.checked)}
-              className="w-5 h-5 text-brand-primary rounded focus:ring-brand-primary accent-brand-primary cursor-pointer"
-            />
+            <Checkbox checked={enablePiiMasking} onCheckedChange={setEnablePiiMasking} />
           </div>
         </div>
 

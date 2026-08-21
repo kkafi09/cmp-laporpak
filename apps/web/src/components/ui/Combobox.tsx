@@ -1,0 +1,22 @@
+import { AnimatePresence, motion } from 'framer-motion';
+import { Check, ChevronsUpDown, MapPin, Search } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { cn } from '../../lib/utils';
+
+const DEFAULT_LOCATIONS = ['Kota Bogor, Jawa Barat', 'Jl. Pajajaran, Kota Bogor', 'Jl. Pemuda, Kota Bogor', 'Kali Ciliwung, Kota Bogor', 'Jembatan Merah, Kota Bogor', 'RS PMI Kota Bogor'];
+
+export function Combobox({ value, onValueChange, options = DEFAULT_LOCATIONS, placeholder = 'Cari atau ketik lokasi kejadian...' }: { value: string; onValueChange: (value: string) => void; options?: string[]; placeholder?: string }) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState(value);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const filtered = useMemo(() => { const needle = query.trim().toLocaleLowerCase(); if (!needle) return options; return options.filter((option) => option.toLocaleLowerCase().includes(needle)); }, [options, query]);
+
+  useEffect(() => { setQuery(value); }, [value]);
+  useEffect(() => { const close = (event: MouseEvent) => { if (!rootRef.current?.contains(event.target as Node)) setOpen(false); }; document.addEventListener('mousedown', close); return () => document.removeEventListener('mousedown', close); }, []);
+
+  const choose = (next: string) => { onValueChange(next); setQuery(next); setOpen(false); };
+  const onKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => { if (event.key === 'ArrowDown') { event.preventDefault(); setOpen(true); setActiveIndex((index) => Math.min(index + 1, Math.max(filtered.length - 1, 0))); } else if (event.key === 'ArrowUp') { event.preventDefault(); setActiveIndex((index) => Math.max(index - 1, 0)); } else if (event.key === 'Enter') { event.preventDefault(); if (filtered[activeIndex]) choose(filtered[activeIndex]); else if (query.trim()) choose(query.trim()); } else if (event.key === 'Escape') setOpen(false); };
+
+  return <div ref={rootRef} className="relative"><div className={cn('flex items-center gap-2 rounded-xl border bg-slateNavy-50 px-3 py-2 transition focus-within:border-brand-primary focus-within:ring-2 focus-within:ring-brand-primary/20', open ? 'border-brand-primary' : 'border-slate-200')}><MapPin className="h-4 w-4 shrink-0 text-slateNavy-400" /><input role="combobox" aria-expanded={open} aria-autocomplete="list" value={query} placeholder={placeholder} onFocus={() => setOpen(true)} onChange={(event) => { setQuery(event.target.value); setOpen(true); setActiveIndex(0); }} onKeyDown={onKeyDown} className="min-w-0 flex-1 bg-transparent text-xs font-medium text-slateNavy-800 outline-none placeholder:text-slateNavy-400" /><ChevronsUpDown className="h-4 w-4 shrink-0 text-slateNavy-400" /></div><AnimatePresence>{open && <motion.div initial={{ opacity: 0, y: -4, scale: 0.98 }} animate={{ opacity: 1, y: 4, scale: 1 }} exit={{ opacity: 0, y: -4, scale: 0.98 }} className="absolute left-0 right-0 top-full z-50 overflow-hidden rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl" role="listbox"><div className="flex items-center gap-2 border-b border-slate-100 px-2 py-2 text-[10px] text-slateNavy-400"><Search className="h-3.5 w-3.5" />Pilih saran lokasi atau lanjutkan mengetik</div>{filtered.map((option, index) => <button key={option} type="button" role="option" aria-selected={option === value} onMouseDown={(event) => event.preventDefault()} onClick={() => choose(option)} className={cn('flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-xs text-slateNavy-700 hover:bg-brand-primary-subtle hover:text-brand-primary', index === activeIndex && 'bg-slateNavy-50', option === value && 'font-bold text-brand-primary')}><span>{option}</span>{option === value && <Check className="h-3.5 w-3.5" />}</button>)}{query.trim() && !filtered.some((option) => option.toLocaleLowerCase() === query.trim().toLocaleLowerCase()) && <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => choose(query.trim())} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-bold text-brand-primary hover:bg-brand-primary-subtle"><MapPin className="h-3.5 w-3.5" />Gunakan “{query.trim()}”</button>}{filtered.length === 0 && !query.trim() && <p className="px-3 py-3 text-center text-xs text-slateNavy-400">Belum ada saran lokasi</p>}</motion.div>}</AnimatePresence></div>;
+}

@@ -13,14 +13,23 @@ import {
   ArrowRight,
   LogIn,
   UserPlus
+  ,TrafficCone, Car, Trash2, Copy, ExternalLink
 } from 'lucide-react';
 import { MascotAvatar } from '../components/MascotAvatar';
 import { OPD_LIST, ComplaintTicket, URGENCY_CONFIG, UrgencyLevel } from '@laporpak/shared';
 import { fetchComplaints, submitNewComplaint } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { Button } from '../components/ui/Button';
+import { Modal } from '../components/ui/Modal';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/Select';
+import { useToast } from '../components/ui/Toast';
+import { Checkbox } from '../components/ui/Checkbox';
+import { DatePicker, formatDateShort } from '../components/ui/DatePicker';
+import { Combobox } from '../components/ui/Combobox';
 
 export function CitizenPortal() {
   const { user, isAuthenticated, logout } = useAuth();
+  const { toast } = useToast();
 
   // Form State
   const [activeTab, setActiveTab] = useState<'PENGADUAN' | 'ASPIRASI' | 'INFORMASI'>('PENGADUAN');
@@ -40,6 +49,9 @@ export function CitizenPortal() {
 
   // Submission & Feedback State
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [copiedTicket, setCopiedTicket] = useState(false);
   const [submittedTicket, setSubmittedTicket] = useState<{
     status: string;
     ticket_id: string;
@@ -64,13 +76,16 @@ export function CitizenPortal() {
       .catch((err) => console.error('Failed to load recent complaints:', err));
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!reportContent.trim()) {
-      alert('Mohon tuliskan isi laporan Anda terlebih dahulu.');
+      toast({ kind: 'error', title: 'Isi laporan belum lengkap', message: 'Mohon tuliskan isi laporan Anda terlebih dahulu.' });
       return;
     }
+    setShowConfirmation(true);
+  };
 
+  const handleConfirmSubmit = async () => {
     try {
       setIsSubmitting(true);
       const payload = {
@@ -83,14 +98,23 @@ export function CitizenPortal() {
 
       const res = await submitNewComplaint(payload);
       setSubmittedTicket(res);
-      // Reset form
+      setShowConfirmation(false);
+      setShowSuccess(true);
       setReportTitle('');
       setReportContent('');
+      toast({ kind: 'success', title: 'Laporan berhasil terkirim', message: `Ticket ${res.ticket_id} sudah tercatat.` });
     } catch (err) {
-      alert('Gagal mengirim aduan. Pastikan backend API aktif.');
+      toast({ kind: 'error', title: 'Laporan gagal dikirim', message: 'Pastikan backend API aktif lalu coba lagi.' });
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleCopyTicket = async () => {
+    if (!submittedTicket) return;
+    await navigator.clipboard.writeText(submittedTicket.ticket_id);
+    setCopiedTicket(true);
+    window.setTimeout(() => setCopiedTicket(false), 1800);
   };
 
   const handleQuickExample = (type: string) => {
@@ -205,10 +229,6 @@ export function CitizenPortal() {
 
         <div className="max-w-[960px] mx-auto text-center relative z-10">
           <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-            <span className="inline-flex items-center space-x-2 bg-white/15 border border-white/25 px-3.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-4">
-              <Sparkles className="w-3.5 h-3.5 text-yellow-300" />
-              <span>Didukung AI Agentic Intelligence Layer & Kepatuhan UU PDP</span>
-            </span>
             <h1 className="text-2xl sm:text-4xl font-black tracking-tight leading-tight mb-2">
               Layanan Aspirasi dan Pengaduan Online Rakyat
             </h1>
@@ -275,21 +295,21 @@ export function CitizenPortal() {
                     onClick={() => handleQuickExample('lampu')}
                     className="text-[11px] px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slateNavy-800 font-semibold hover:border-brand-primary hover:text-brand-primary transition-all"
                   >
-                    🚦 Lampu Merah Mati (SMPN 1)
+                    <TrafficCone className="inline h-3.5 w-3.5 mr-1 text-brand-primary" /> Lampu Merah Mati (SMPN 1)
                   </button>
                   <button
                     type="button"
                     onClick={() => handleQuickExample('jalan')}
                     className="text-[11px] px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slateNavy-800 font-semibold hover:border-brand-primary hover:text-brand-primary transition-all"
                   >
-                    🚗 Jalan Amblas RS PMI
+                    <Car className="inline h-3.5 w-3.5 mr-1 text-brand-primary" /> Jalan Amblas RS PMI
                   </button>
                   <button
                     type="button"
                     onClick={() => handleQuickExample('sampah')}
                     className="text-[11px] px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slateNavy-800 font-semibold hover:border-brand-primary hover:text-brand-primary transition-all"
                   >
-                    🗑️ Sampah Jembatan Merah
+                    <Trash2 className="inline h-3.5 w-3.5 mr-1 text-brand-primary" /> Sampah Jembatan Merah
                   </button>
                 </div>
               </div>
@@ -322,7 +342,7 @@ export function CitizenPortal() {
                         {Math.round(submittedTicket.complaint.confidence * 100)}%)
                       </div>
                       <div className="text-[11px] text-purple-700 font-medium">
-                        🛡️ Data Pribadi (NIK/Telp) telah disensor otomatis sesuai UU PDP No. 27/2022.
+                        <ShieldCheck className="inline h-3.5 w-3.5 mr-1 text-purple-600" /> Data Pribadi (NIK/Telp) telah disensor otomatis sesuai UU PDP No. 27/2022.
                       </div>
                     </div>
                   </motion.div>
@@ -365,25 +385,14 @@ export function CitizenPortal() {
                       <Calendar className="w-3.5 h-3.5 inline mr-1 text-slateNavy-400" />
                       Tanggal Kejadian
                     </label>
-                    <input
-                      type="date"
-                      value={incidentDate}
-                      onChange={(e) => setIncidentDate(e.target.value)}
-                      className="w-full px-3 py-2 text-xs bg-slateNavy-50 border border-slate-200 rounded-xl"
-                    />
+                    <DatePicker value={incidentDate} onValueChange={setIncidentDate} />
                   </div>
                   <div>
                     <label className="text-xs font-bold text-slateNavy-700 block mb-1">
                       <MapPin className="w-3.5 h-3.5 inline mr-1 text-slateNavy-400" />
                       Lokasi Kejadian
                     </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Jl. Pajajaran, Kota Bogor"
-                      value={incidentLocation}
-                      onChange={(e) => setIncidentLocation(e.target.value)}
-                      className="w-full px-3 py-2 text-xs bg-slateNavy-50 border border-slate-200 rounded-xl"
-                    />
+                    <Combobox value={incidentLocation} onValueChange={setIncidentLocation} />
                   </div>
                 </div>
 
@@ -393,33 +402,19 @@ export function CitizenPortal() {
                       <Building2 className="w-3.5 h-3.5 inline mr-1 text-slateNavy-400" />
                       Instansi Tujuan (Rekomendasi AI Otomatis)
                     </label>
-                    <select
-                      value={targetDepartment}
-                      onChange={(e) => setTargetDepartment(e.target.value)}
-                      className="w-full px-3 py-2 text-xs bg-slateNavy-50 border border-slate-200 rounded-xl font-medium"
-                    >
-                      {OPD_LIST.map((opd) => (
-                        <option key={opd.id} value={opd.name}>
-                          {opd.name}
-                        </option>
-                      ))}
-                    </select>
+                    <Select value={targetDepartment} onValueChange={setTargetDepartment}>
+                      <SelectTrigger><SelectValue placeholder="Pilih instansi" /></SelectTrigger>
+                      <SelectContent>{OPD_LIST.map((opd) => <SelectItem key={opd.id} value={opd.name}>{opd.name}</SelectItem>)}</SelectContent>
+                    </Select>
                   </div>
                   <div>
                     <label className="text-xs font-bold text-slateNavy-700 block mb-1">Kategori Laporan</label>
-                    <select
-                      value={category}
-                      onChange={(e) => setCategory(e.target.value)}
-                      className="w-full px-3 py-2 text-xs bg-slateNavy-50 border border-slate-200 rounded-xl font-medium"
-                    >
-                      <option value="Transportasi & Lalu Lintas">Transportasi & Lalu Lintas</option>
-                      <option value="Infrastruktur Pekerjaan Umum">Infrastruktur Pekerjaan Umum</option>
-                      <option value="Lingkungan Hidup & Kebersihan">Lingkungan Hidup & Kebersihan</option>
-                      <option value="Kesehatan Masyarakat">Kesehatan Masyarakat</option>
-                      <option value="Kependudukan & Pencatatan Sipil">Kependudukan & Pencatatan Sipil</option>
-                      <option value="Pendidikan">Pendidikan</option>
-                      <option value="Ketertiban & Keamanan Umum">Ketertiban & Keamanan Umum</option>
-                    </select>
+                    <Select value={category} onValueChange={setCategory}>
+                      <SelectTrigger><SelectValue placeholder="Pilih kategori" /></SelectTrigger>
+                      <SelectContent>
+                        {['Transportasi & Lalu Lintas', 'Infrastruktur Pekerjaan Umum', 'Lingkungan Hidup & Kebersihan', 'Kesehatan Masyarakat', 'Kependudukan & Pencatatan Sipil', 'Pendidikan', 'Ketertiban & Keamanan Umum'].map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
 
@@ -462,24 +457,8 @@ export function CitizenPortal() {
                 {/* Privacy Checkboxes */}
                 <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
                   <div className="flex items-center space-x-4">
-                    <label className="flex items-center space-x-1.5 text-xs font-bold text-slateNavy-700 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={isAnonymous}
-                        onChange={(e) => setIsAnonymous(e.target.checked)}
-                        className="rounded accent-brand-primary w-4 h-4"
-                      />
-                      <span>Anonim (Nama Disamarkan)</span>
-                    </label>
-                    <label className="flex items-center space-x-1.5 text-xs font-bold text-slateNavy-700 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={isSecret}
-                        onChange={(e) => setIsSecret(e.target.checked)}
-                        className="rounded accent-brand-primary w-4 h-4"
-                      />
-                      <span>Rahasia (Tidak Dipublikasi)</span>
-                    </label>
+                    <Checkbox checked={isAnonymous} onCheckedChange={setIsAnonymous} label="Anonim (Nama Disamarkan)" />
+                    <Checkbox checked={isSecret} onCheckedChange={setIsSecret} label="Rahasia (Tidak Dipublikasi)" />
                   </div>
 
                   <span className="text-[10px] text-slateNavy-400 flex items-center space-x-1">
@@ -629,7 +608,7 @@ export function CitizenPortal() {
                     <span className="font-semibold text-brand-primary">
                       {ticket.routing.recommendedDepartment.departmentName}
                     </span>
-                    <span className="font-medium">{ticket.status === 'DISPATCHED' ? '🟢 Terdisposisi' : '🟡 Diverifikasi'}</span>
+                    <span className="font-medium inline-flex items-center gap-1">{ticket.status === 'DISPATCHED' ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> : <ShieldCheck className="h-3.5 w-3.5 text-amber-600" />}{ticket.status === 'DISPATCHED' ? 'Terdisposisi' : 'Diverifikasi'}</span>
                   </div>
                 </div>
               );
@@ -637,6 +616,39 @@ export function CitizenPortal() {
           </div>
         </div>
       </section>
+
+      <Modal
+        open={showConfirmation}
+        onClose={() => !isSubmitting && setShowConfirmation(false)}
+        title="Periksa kembali laporan Anda"
+        description="Pastikan data yang dikirim sudah benar dan sesuai sebelum laporan diproses."
+      >
+        <div className="space-y-3 text-xs">
+          <div className="rounded-2xl border border-slate-200 bg-slateNavy-50 p-4">
+            <div className="mb-3 flex items-center gap-2 text-sm font-extrabold text-slateNavy-900"><Building2 className="h-4 w-4 text-brand-primary" />Ringkasan laporan</div>
+            <dl className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <div><dt className="text-[10px] font-bold uppercase text-slateNavy-400">Judul</dt><dd className="font-semibold">{reportTitle || 'Tanpa judul'}</dd></div>
+              <div><dt className="text-[10px] font-bold uppercase text-slateNavy-400">Tanggal</dt><dd className="font-semibold">{formatDateShort(incidentDate)}</dd></div>
+              <div><dt className="text-[10px] font-bold uppercase text-slateNavy-400">Lokasi</dt><dd className="font-semibold">{incidentLocation || 'Tidak diisi'}</dd></div>
+              <div><dt className="text-[10px] font-bold uppercase text-slateNavy-400">Kategori</dt><dd className="font-semibold">{category}</dd></div>
+              <div><dt className="text-[10px] font-bold uppercase text-slateNavy-400">Instansi tujuan</dt><dd className="font-semibold">{targetDepartment}</dd></div>
+              <div><dt className="text-[10px] font-bold uppercase text-slateNavy-400">Pelapor</dt><dd className="font-semibold">{isAnonymous ? 'Warga Anonim' : reporterName || 'Warga Masyarakat'}</dd></div>
+            </dl>
+            <div className="mt-3 border-t border-slate-200 pt-3"><dt className="text-[10px] font-bold uppercase text-slateNavy-400">Isi laporan</dt><dd className="mt-1 max-h-28 overflow-y-auto whitespace-pre-wrap leading-relaxed text-slateNavy-700">{reportContent}</dd></div>
+          </div>
+          <div className="flex items-start gap-2 rounded-xl border border-purple-200 bg-purple-50 p-3 text-[11px] leading-relaxed text-purple-900"><ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-purple-600" /><span>Data pribadi Anda dilindungi dan akan disensor sesuai UU PDP No. 27/2022 sebelum diproses.</span></div>
+          <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end"><Button type="button" variant="secondary" disabled={isSubmitting} onClick={() => setShowConfirmation(false)}>Kembali Edit</Button><Button type="button" disabled={isSubmitting} onClick={handleConfirmSubmit}>{isSubmitting ? <><span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" /> Mengirim laporan...</> : <><Send className="h-3.5 w-3.5" /> Kirim Laporan</>}</Button></div>
+        </div>
+      </Modal>
+
+      <Modal
+        open={showSuccess && Boolean(submittedTicket)}
+        onClose={() => setShowSuccess(false)}
+        title="Laporan berhasil terkirim"
+        description="Simpan ticket ID ini untuk memantau perkembangan laporan Anda."
+      >
+        {submittedTicket && <div className="space-y-4 text-center"><div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100"><CheckCircle2 className="h-8 w-8 text-emerald-600" /></div><div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4"><p className="text-[10px] font-bold uppercase tracking-wider text-emerald-700">Ticket ID Anda</p><p className="mt-1 font-mono text-xl font-black tracking-wider text-slateNavy-900">{submittedTicket.ticket_id}</p><button type="button" onClick={handleCopyTicket} className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-700 hover:text-emerald-900"><Copy className="h-3.5 w-3.5" />{copiedTicket ? 'ID berhasil disalin' : 'Salin ticket ID'}</button></div><div className="flex flex-col gap-2 sm:flex-row sm:justify-center"><Link to="/lacak" search={{ q: submittedTicket.ticket_id }}><Button type="button" className="w-full sm:w-auto"><ExternalLink className="h-3.5 w-3.5" /> Lacak Tiket</Button></Link><Button type="button" variant="secondary" onClick={() => setShowSuccess(false)}>Tutup</Button></div></div>}
+      </Modal>
 
       {/* FOOTER */}
       <footer className="bg-slateNavy-950 text-white/70 py-10 px-4 border-t border-slate-800 text-xs">

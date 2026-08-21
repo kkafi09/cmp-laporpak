@@ -7,8 +7,10 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { fetchOpds, createOpd, OPDData } from '../services/api';
+import { useToast } from '../components/ui/Toast';
 
 export function OpdManagement() {
+  const { toast } = useToast();
   const [opdList, setOpdList] = useState<OPDData[]>([]);
   const [selectedOpd, setSelectedOpd] = useState<OPDData | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -38,7 +40,7 @@ export function OpdManagement() {
   const handleCreateOpd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCode || !newName) {
-      alert('Mohon isi kode dan nama OPD.');
+      toast({ kind: 'error', title: 'Data OPD belum lengkap', message: 'Mohon isi kode dan nama OPD.' });
       return;
     }
 
@@ -57,14 +59,14 @@ export function OpdManagement() {
         sla_standard_hours: Number(newSla)
       });
 
-      alert('OPD baru berhasil ditambahkan ke database!');
+      toast({ kind: 'success', title: 'OPD berhasil ditambahkan', message: 'Data OPD baru tersimpan di database.' });
       setShowAddModal(false);
       setNewCode('');
       setNewName('');
       setNewScope('');
       loadOpds();
     } catch (err) {
-      alert('Gagal menambah OPD baru ke database backend.');
+      toast({ kind: 'error', title: 'OPD gagal ditambahkan', message: 'Periksa koneksi backend lalu coba lagi.' });
     }
   };
 

@@ -10,6 +10,7 @@ import {
   Building2,
   Calendar,
   Layers
+  ,Zap
 } from 'lucide-react';
 import { fetchAnalytics, AnalyticsData } from '../services/api';
 
@@ -108,7 +109,7 @@ export function AnalyticsDashboard() {
           </div>
           <div className="text-2xl font-black text-slateNavy-900 mt-3">{summary.average_triage_seconds}s</div>
           <div className="text-[11px] font-semibold text-emerald-600 mt-1">
-            ⚡ 98% Lebih Cepat dari manual
+            <span className="inline-flex items-center gap-1"><Zap className="h-3.5 w-3.5" /> 98% Lebih Cepat dari manual</span>
           </div>
         </motion.div>
 
@@ -144,7 +145,7 @@ export function AnalyticsDashboard() {
           </div>
           <div className="text-2xl font-black text-slateNavy-900 mt-3">{summary.pii_protected_count} Laporan</div>
           <div className="text-[11px] font-semibold text-purple-600 mt-1">
-            🛡️ 100% Kepatuhan UU PDP
+            <span className="inline-flex items-center gap-1"><ShieldCheck className="h-3.5 w-3.5" /> 100% Kepatuhan UU PDP</span>
           </div>
         </motion.div>
       </div>
