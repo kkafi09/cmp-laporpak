@@ -7,7 +7,7 @@
 | :--- | :--- |
 | **Produk** | **LaporPak! — Agentic Intelligence Layer** |
 | **Referensi UI/UX** | **beUI.dev** (Motion-Rich, shadcn-compatible, micro-interactions) |
-| **Palet Warna** | Diekstrak langsung dari Brand Identity `logo-1.jpeg` & `logo-2.jpeg` |
+| **Palet Warna** | Diekstrak langsung dari Brand Identity `LaporPak favicon.svg` & `LaporPak Main logo.svg` |
 | **Arsitektur Repositori** | **Turborepo / NPM/PNPM Monorepo** (`apps/web`, `apps/api`, `packages/shared`) |
 | **Versi Dokumen** | v1.0.0 |
 
@@ -15,7 +15,7 @@
 
 ## 1. Brand Identity & Color Palette (Berdasarkan Logo)
 
-Berdasarkan aset resmi [`logo-1.jpeg`](file:///c:/Users/user/Documents/Developments/_projects_/laporpak/logo-1.jpeg) dan [`logo-2.jpeg`](file:///c:/Users/user/Documents/Developments/_projects_/laporpak/logo-2.jpeg), identitas visual LaporPak! memadukan warna merah kedaulatan Indonesia yang berani (*vibrant red*) dengan warna navy-slate birokrasi modern yang berwibawa (*deep slate navy*) serta sentuhan aksen maskot AI yang ramah (*friendly government copilot*).
+Berdasarkan aset resmi `LaporPak favicon.svg` dan `LaporPak Main logo.svg`, identitas visual LaporPak! memadukan warna merah kedaulatan Indonesia yang berani (*vibrant red*) dengan warna navy-slate birokrasi modern yang berwibawa (*deep slate navy*) serta sentuhan aksen maskot AI yang ramah (*friendly government copilot*).
 
 ```
 +---------------------------------------------------------------------------------------------------+

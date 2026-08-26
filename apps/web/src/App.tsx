@@ -164,7 +164,7 @@ export function App() {
           <div className="flex items-center space-x-3">
             <MascotAvatar status="idle" size="md" />
             <div className="flex items-center space-x-2">
-              <img src="/logo-2.jpeg" alt="LaporPak! Logo" className="h-9 w-auto object-contain" />
+              <img src="/LaporPak Main logo.svg" alt="LaporPak! Logo" className="h-9 w-auto object-contain" />
               <span className="hidden sm:inline-block ml-1 text-[10px] uppercase font-extrabold tracking-wider px-2.5 py-0.5 rounded-full bg-brand-primary-light text-brand-primary border border-brand-primary/20">
                 Agentic Copilot
               </span>
