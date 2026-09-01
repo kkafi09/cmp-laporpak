@@ -16,14 +16,14 @@ export const MascotAvatar: React.FC<MascotAvatarProps> = ({ status = 'idle', siz
   return (
     <div className={`relative flex items-center justify-center ${sizeClasses[size]}`}>
       <motion.div
-        className="w-full h-full rounded-2xl overflow-hidden shadow-glow-red flex items-center justify-center bg-brand-primary"
+        className="w-full h-full flex items-center justify-center"
         animate={status === 'thinking' ? { scale: [1, 1.08, 1], rotate: [0, 2, -2, 0] } : {}}
         transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
       >
         <img
-          src="/logo-1.jpeg"
+          src="/favicon.svg"
           alt="LaporPak! Mascot"
-          className="w-full h-full object-cover select-none pointer-events-none"
+          className="w-full h-full object-contain select-none pointer-events-none"
         />
       </motion.div>
     </div>

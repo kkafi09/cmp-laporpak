@@ -4,7 +4,6 @@ import { Link } from '@tanstack/react-router';
 import {
   Send,
   ShieldCheck,
-  Search,
   CheckCircle2,
   MapPin,
   Calendar,
@@ -12,10 +11,13 @@ import {
   Sparkles,
   ArrowRight,
   LogIn,
-  UserPlus
-  ,TrafficCone, Car, Trash2, Copy, ExternalLink
+  UserPlus,
+  TrafficCone,
+  Car,
+  Trash2,
+  Copy,
+  ExternalLink
 } from 'lucide-react';
-import { MascotAvatar } from '../components/MascotAvatar';
 import { OPD_LIST, ComplaintTicket, URGENCY_CONFIG, UrgencyLevel } from '@laporpak/shared';
 import { fetchComplaints, submitNewComplaint } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -66,8 +68,6 @@ export function CitizenPortal() {
     };
   } | null>(null);
 
-  // Tracking Search
-  const [trackQuery, setTrackQuery] = useState('');
   const [recentComplaints, setRecentComplaints] = useState<ComplaintTicket[]>([]);
 
   useEffect(() => {
@@ -145,10 +145,10 @@ export function CitizenPortal() {
   return (
     <div className="min-h-screen bg-slateNavy-50 text-slateNavy-900 flex flex-col font-sans">
       {/* Top Republic Emblem Bar */}
-      <div className="bg-slateNavy-950 text-white/80 py-1.5 px-4 text-[11px] border-b border-slate-800">
+      <div className="bg-slateNavy-950 text-white/80 py-2.5 px-4 text-[11px] border-b border-slate-800">
         <div className="max-w-[1280px] mx-auto flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <span className="font-bold text-white tracking-wide">PORTAL RESMI SP4N-LAPOR!</span>
+            <span className="font-bold text-white tracking-wide">PORTAL RESMI LAPORPAK!</span>
             <span className="text-white/40">|</span>
             <span className="hidden sm:inline">KemenPAN-RB • Kemendagri • Ombudsman RI • KSP • Kominfo</span>
           </div>
@@ -191,20 +191,14 @@ export function CitizenPortal() {
       <header className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm backdrop-blur-md bg-white/95">
         <div className="max-w-[1280px] mx-auto px-4 h-18 py-3 flex items-center justify-between">
           <Link to="/" className="flex flex-col">
-            <img src="/logo-2.jpeg" alt="LaporPak! SP4N-LAPOR Logo" className="h-10 w-auto object-contain" />
-            <span className="text-[10px] text-slateNavy-500 font-semibold tracking-tight mt-0.5">
-              Layanan Aspirasi dan Pengaduan Online Rakyat
-            </span>
+            <img src="/LaporPak Main logo.svg" alt="LaporPak! SP4N-LAPOR Logo" className="h-10 w-auto object-contain" />
           </Link>
 
           {/* Navigation Links */}
           <nav className="hidden md:flex items-center space-x-6 text-xs font-bold text-slateNavy-700">
-            <Link to="/" className="text-brand-primary">
+            <Link to="/" className="hover:text-brand-primary">
               Beranda
             </Link>
-            <a href="#form-section" className="hover:text-brand-primary">
-              Tulis Laporan
-            </a>
             <Link to="/lacak" className="hover:text-brand-primary">
               Lacak Pengaduan
             </Link>
@@ -250,33 +244,30 @@ export function CitizenPortal() {
               <button
                 type="button"
                 onClick={() => setActiveTab('PENGADUAN')}
-                className={`py-3.5 transition-all ${
-                  activeTab === 'PENGADUAN'
-                    ? 'bg-brand-primary text-white shadow-inner font-extrabold'
-                    : 'bg-slateNavy-50 text-slateNavy-700 hover:bg-slateNavy-100'
-                }`}
+                className={`py-3.5 transition-all ${activeTab === 'PENGADUAN'
+                  ? 'bg-brand-primary text-white shadow-inner font-extrabold'
+                  : 'bg-slateNavy-50 text-slateNavy-700 hover:bg-slateNavy-100'
+                  }`}
               >
                 PENGADUAN
               </button>
               <button
                 type="button"
                 onClick={() => setActiveTab('ASPIRASI')}
-                className={`py-3.5 transition-all ${
-                  activeTab === 'ASPIRASI'
-                    ? 'bg-brand-primary text-white shadow-inner font-extrabold'
-                    : 'bg-slateNavy-50 text-slateNavy-700 hover:bg-slateNavy-100'
-                }`}
+                className={`py-3.5 transition-all ${activeTab === 'ASPIRASI'
+                  ? 'bg-brand-primary text-white shadow-inner font-extrabold'
+                  : 'bg-slateNavy-50 text-slateNavy-700 hover:bg-slateNavy-100'
+                  }`}
               >
                 ASPIRASI
               </button>
               <button
                 type="button"
                 onClick={() => setActiveTab('INFORMASI')}
-                className={`py-3.5 transition-all ${
-                  activeTab === 'INFORMASI'
-                    ? 'bg-brand-primary text-white shadow-inner font-extrabold'
-                    : 'bg-slateNavy-50 text-slateNavy-700 hover:bg-slateNavy-100'
-                }`}
+                className={`py-3.5 transition-all ${activeTab === 'INFORMASI'
+                  ? 'bg-brand-primary text-white shadow-inner font-extrabold'
+                  : 'bg-slateNavy-50 text-slateNavy-700 hover:bg-slateNavy-100'
+                  }`}
               >
                 PERMINTAAN INFORMASI
               </button>
@@ -295,7 +286,7 @@ export function CitizenPortal() {
                     onClick={() => handleQuickExample('lampu')}
                     className="text-[11px] px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slateNavy-800 font-semibold hover:border-brand-primary hover:text-brand-primary transition-all"
                   >
-                    <TrafficCone className="inline h-3.5 w-3.5 mr-1 text-brand-primary" /> Lampu Merah Mati (SMPN 1)
+                    <TrafficCone className="inline h-3.5 w-3.5 mr-1 text-brand-primary" /> Lampu Merah Mati
                   </button>
                   <button
                     type="button"
@@ -400,7 +391,7 @@ export function CitizenPortal() {
                   <div>
                     <label className="text-xs font-bold text-slateNavy-700 block mb-1">
                       <Building2 className="w-3.5 h-3.5 inline mr-1 text-slateNavy-400" />
-                      Instansi Tujuan (Rekomendasi AI Otomatis)
+                      Instansi Tujuan
                     </label>
                     <Select value={targetDepartment} onValueChange={setTargetDepartment}>
                       <SelectTrigger><SelectValue placeholder="Pilih instansi" /></SelectTrigger>
@@ -432,7 +423,7 @@ export function CitizenPortal() {
                       />
                     </div>
                     <div>
-                      <label className="text-[11px] font-bold text-slateNavy-700">NIK (16 Digit - Terlindungi)</label>
+                      <label className="text-[11px] font-bold text-slateNavy-700">NIK 16 Digit (Terlindungi)</label>
                       <input
                         type="text"
                         value={reporterNik}
@@ -482,7 +473,7 @@ export function CitizenPortal() {
                     ) : (
                       <>
                         <Send className="w-4 h-4" />
-                        <span>LAPOR! SEKARANG</span>
+                        <span>KIRIM LAPORAN</span>
                       </>
                     )}
                   </button>
@@ -490,36 +481,6 @@ export function CitizenPortal() {
               </form>
             </div>
           </motion.div>
-        </div>
-      </section>
-
-      {/* QUICK TRACKING SEARCH SECTION */}
-      <section className="bg-white py-10 px-4 border-b border-slate-200">
-        <div className="max-w-[800px] mx-auto text-center">
-          <h2 className="text-lg font-black text-slateNavy-900 mb-2">Lacak Status Aduan Publik Anda</h2>
-          <p className="text-xs text-slateNavy-500 mb-4">
-            Masukkan nomor tiket laporan (contoh: <code className="font-mono text-brand-primary font-bold">LPK-20260820-0042</code>)
-            untuk memeriksa status tindak lanjut instansi.
-          </p>
-          <div className="flex items-center space-x-2 max-w-md mx-auto">
-            <div className="relative flex-1">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slateNavy-400" />
-              <input
-                type="text"
-                placeholder="Masukkan Nomor Tiket..."
-                value={trackQuery}
-                onChange={(e) => setTrackQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 text-xs bg-slateNavy-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-primary/30"
-              />
-            </div>
-            <Link
-              to="/lacak"
-              search={{ q: trackQuery }}
-              className="px-5 py-2.5 bg-slateNavy-900 hover:bg-black text-white text-xs font-bold rounded-xl transition-all shadow-sm"
-            >
-              Lacak
-            </Link>
-          </div>
         </div>
       </section>
 
@@ -655,7 +616,7 @@ export function CitizenPortal() {
         <div className="max-w-[1280px] mx-auto grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="md:col-span-2">
             <div className="flex items-center space-x-2 mb-3">
-              <MascotAvatar status="idle" size="sm" />
+              <img src="/favicon.svg" alt="LaporPak!" className="w-8 h-8 object-contain" />
               <span className="text-base font-black text-white">LaporPak!</span>
             </div>
             <p className="text-xs text-white/60 leading-relaxed max-w-md">
@@ -702,7 +663,7 @@ export function CitizenPortal() {
         </div>
 
         <div className="max-w-[1280px] mx-auto mt-8 pt-6 border-t border-slate-800 text-center text-white/40 text-[11px]">
-          © 2026 LaporPak! - Tim Sebelah
+          Copyright © 2026 LaporPak!
         </div>
       </footer>
     </div>

@@ -52,7 +52,7 @@ export function LoginPage() {
           <ArrowLeft className="w-4 h-4" />
           <span>Kembali ke Beranda</span>
         </Link>
-        <img src="/logo-2.jpeg" alt="LaporPak! Logo" className="h-12 mx-auto object-contain mb-2" />
+        <img src="/LaporPak Main logo.svg" alt="LaporPak! Logo" className="h-12 mx-auto object-contain mb-2" />
         <p className="text-xs text-slateNavy-500 font-medium">
           Masuk ke Akun Portal Pengaduan atau Dashboard ASN
         </p>
