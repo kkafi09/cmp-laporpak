@@ -37,10 +37,6 @@ export function TrackComplaint() {
             <ArrowLeft className="w-4 h-4" />
             <span>Kembali ke Beranda Portal</span>
           </Link>
-          <Link to="/" className="flex items-center space-x-2">
-            <img src="/logo-2.jpeg" alt="LaporPak!" className="h-8 w-auto object-contain" />
-            <span className="text-xs font-bold text-slateNavy-500">• Tracking Laporan</span>
-          </Link>
         </div>
       </header>
 
@@ -150,11 +146,10 @@ export function TrackComplaint() {
                       </div>
 
                       <div
-                        className={`p-3 rounded-2xl border ${
-                          ticket.status === 'DISPATCHED'
-                            ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
-                            : 'bg-amber-50 border-amber-200 text-amber-900'
-                        }`}
+                        className={`p-3 rounded-2xl border ${ticket.status === 'DISPATCHED'
+                          ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                          : 'bg-amber-50 border-amber-200 text-amber-900'
+                          }`}
                       >
                         <div className="flex items-center space-x-1.5 text-xs font-bold">
                           {ticket.status === 'DISPATCHED' ? (

@@ -44,7 +44,7 @@ export function RegisterPage() {
           <ArrowLeft className="w-4 h-4" />
           <span>Kembali ke Beranda</span>
         </Link>
-        <img src="/logo-2.jpeg" alt="LaporPak! Logo" className="h-11 mx-auto object-contain mb-2" />
+        <img src="/LaporPak Main logo.svg" alt="LaporPak! Logo" className="h-11 mx-auto object-contain mb-2" />
         <h2 className="text-xl font-black text-slateNavy-900 tracking-tight">Daftar Akun Warga Baru</h2>
         <p className="text-xs text-slateNavy-500 font-medium">
           Dapatkan kemudahan pelacakan aduan dan perlindungan privasi UU PDP No. 27/2022

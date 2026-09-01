@@ -78,15 +78,15 @@ export function TriageDashboard() {
         prev.map((t) =>
           t.id === currentTicket.id
             ? {
-                ...t,
-                status: 'DISPATCHED',
-                approvedByAsn: {
-                  asnName: 'Dr. Hendra Gunawan, M.Si',
-                  asnNip: '198403152008011004',
-                  approvedAt: new Date().toISOString(),
-                  overrideOccurred: false
-                }
+              ...t,
+              status: 'DISPATCHED',
+              approvedByAsn: {
+                asnName: 'Dr. Hendra Gunawan, M.Si',
+                asnNip: '198403152008011004',
+                approvedAt: new Date().toISOString(),
+                overrideOccurred: false
               }
+            }
             : t
         )
       );
@@ -264,11 +264,10 @@ export function TriageDashboard() {
               <button
                 key={lvl}
                 onClick={() => setFilterUrgency(lvl)}
-                className={`px-3 py-1.5 rounded-xl font-semibold transition-all whitespace-nowrap ${
-                  filterUrgency === lvl
+                className={`px-3 py-1.5 rounded-xl font-semibold transition-all whitespace-nowrap ${filterUrgency === lvl
                     ? 'bg-slateNavy-900 text-white shadow-sm'
                     : 'bg-white text-slateNavy-700 hover:bg-slateNavy-100 border border-slate-200'
-                }`}
+                  }`}
               >
                 {lvl === 'ALL' ? 'Semua Urgensi' : lvl}
               </button>
@@ -296,11 +295,10 @@ export function TriageDashboard() {
                     whileHover={{ scale: 1.01 }}
                     whileTap={{ scale: 0.99 }}
                     onClick={() => handleSelectTicket(ticket)}
-                    className={`p-4 rounded-2xl cursor-pointer border transition-all duration-200 relative ${
-                      isSelected
+                    className={`p-4 rounded-2xl cursor-pointer border transition-all duration-200 relative ${isSelected
                         ? 'bg-white border-brand-primary shadow-glow-red ring-1 ring-brand-primary'
                         : 'bg-white border-slate-200 hover:border-slate-300 shadow-sm'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center space-x-2">
