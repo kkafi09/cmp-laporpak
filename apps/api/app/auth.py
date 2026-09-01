@@ -4,6 +4,7 @@ import hashlib
 import hmac
 import json
 import os
+import secrets
 import time
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -11,11 +12,24 @@ from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.db.models import User
 
+if os.getenv("APP_ENV") == "production" and not os.getenv("JWT_SECRET"):
+    raise RuntimeError("JWT_SECRET wajib diisi pada production")
 SECRET = os.getenv("JWT_SECRET", "laporpak-development-secret-change-me").encode()
 bearer = HTTPBearer(auto_error=False)
 
 def hash_password(password: str) -> str:
-    return hashlib.sha256(password.encode()).hexdigest()
+    salt = secrets.token_bytes(16)
+    digest = hashlib.pbkdf2_hmac("sha256", password.encode(), salt, 310000)
+    return f"pbkdf2_sha256$310000${_b64(salt)}${_b64(digest)}"
+
+def verify_password(password: str, stored: str) -> bool:
+    try:
+        algorithm, iterations, salt, digest = stored.split("$")
+        if algorithm != "pbkdf2_sha256": return False
+        actual = hashlib.pbkdf2_hmac("sha256", password.encode(), base64.urlsafe_b64decode(salt + "=" * (-len(salt) % 4)), int(iterations))
+        return hmac.compare_digest(_b64(actual), digest)
+    except (ValueError, binascii.Error):
+        return False
 
 def _b64(value: bytes) -> str:
     return base64.urlsafe_b64encode(value).rstrip(b"=").decode()

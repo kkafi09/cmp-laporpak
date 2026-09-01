@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { loginApi, registerApi } from '../services/api';
+import { loginApi, registerApi, meApi } from '../services/api';
 
 export interface UserProfile {
   id: string;
@@ -43,6 +43,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.removeItem('laporpak_auth_user');
     }
   }, [user]);
+
+  useEffect(() => {
+    if (!localStorage.getItem('laporpak_auth_token')) return;
+    meApi().then(setUser).catch(() => { localStorage.removeItem('laporpak_auth_token'); setUser(null); });
+  }, []);
 
   const login = async (_role: 'CITIZEN' | 'ADMIN_ASN', credentials?: { username?: string; password?: string }) => {
     if (!credentials?.username || !credentials.password) throw new Error('Username dan password wajib diisi');

@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.db.models import Complaint, OPD, SystemSetting, User, AuditLog
-from app.auth import create_token, get_current_user, hash_password, require_admin
+from app.auth import create_token, get_current_user, hash_password, verify_password, require_admin
 from app.agents.pii_shield import PIIShieldAgent
 from app.agents.spam_filter import SpamFilterAgent
 from app.agents.deduplication import SemanticDeduplicationAgent
@@ -18,8 +18,11 @@ router = APIRouter()
 @router.post("/auth/login")
 def login(payload: Dict[str, Any], db: Session = Depends(get_db)):
     username = str(payload.get("username", "")).strip()
-    user = db.query(User).filter(User.username == username, User.is_active == True).first()
-    if not user or not hmac_compare(hash_password(str(payload.get("password", ""))), user.password_hash):
+    user = db.query(User).filter(
+        (User.username == username) | (User.email == username.lower()),
+        User.is_active == True,
+    ).first()
+    if not user or not verify_password(str(payload.get("password", "")), user.password_hash):
         raise HTTPException(status_code=401, detail="Username atau password salah")
     return {"token": create_token(user), "user": user_public(user)}
 
@@ -254,6 +257,23 @@ def create_complaint(payload: Dict[str, Any], db: Session = Depends(get_db)):
             "status": new_complaint.status
         }
     }
+
+@router.post("/complaints/{ticket_id}/assign")
+def assign_complaint(ticket_id: str, payload: Dict[str, Any], db: Session = Depends(get_db), user: User = Depends(require_admin)):
+    complaint = db.query(Complaint).filter(Complaint.id == ticket_id).first()
+    opd = db.query(OPD).filter(OPD.id == payload.get("opd_id"), OPD.is_active == True).first()
+    if not complaint: raise HTTPException(status_code=404, detail="Tiket tidak ditemukan")
+    if not opd: raise HTTPException(status_code=400, detail="OPD aktif tidak ditemukan")
+    if complaint.status != "PENDING_MANUAL_ROUTING": raise HTTPException(status_code=409, detail="Tiket tidak menunggu routing manual")
+    before = {"status": complaint.status, "assignedOpdId": complaint.assigned_opd_id}
+    complaint.recommended_opd_id = opd.id
+    complaint.recommended_opd_name = opd.name
+    complaint.assigned_opd_id = opd.id
+    complaint.assigned_opd_name = opd.name
+    complaint.status = "PENDING_APPROVAL"
+    audit(db, user, "ASSIGN", "COMPLAINT", ticket_id, before, {"status": complaint.status, "assignedOpdId": opd.id}, payload.get("reason"))
+    db.commit()
+    return {"status": "success", "ticket_id": ticket_id, "new_status": complaint.status, "assigned_opd": opd.name}
 
 @router.post("/complaints/{ticket_id}/action")
 def perform_action(ticket_id: str, payload: Dict[str, Any], db: Session = Depends(get_db), user: User = Depends(require_admin)):

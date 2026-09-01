@@ -202,9 +202,9 @@ export function CitizenPortal() {
             <Link to="/lacak" className="hover:text-brand-primary">
               Lacak Pengaduan
             </Link>
-            <a href="#statistik-section" className="hover:text-brand-primary">
+            <button type="button" onClick={() => document.getElementById('statistik-section')?.scrollIntoView({ behavior: 'smooth' })} className="hover:text-brand-primary">
               Statistik
-            </a>
+            </button>
             {user?.role === 'ADMIN_ASN' && (
               <Link
                 to="/admin"
@@ -567,7 +567,7 @@ export function CitizenPortal() {
 
                   <div className="pt-3 border-t border-slate-200 flex items-center justify-between text-[11px] text-slateNavy-500">
                     <span className="font-semibold text-brand-primary">
-                      {ticket.routing.recommendedDepartment.departmentName}
+                      {ticket.routing.recommendedDepartment?.departmentName || 'Menunggu routing manual'}
                     </span>
                     <span className="font-medium inline-flex items-center gap-1">{ticket.status === 'DISPATCHED' ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> : <ShieldCheck className="h-3.5 w-3.5 text-amber-600" />}{ticket.status === 'DISPATCHED' ? 'Terdisposisi' : 'Diverifikasi'}</span>
                   </div>

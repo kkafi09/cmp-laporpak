@@ -141,7 +141,7 @@ export function TrackComplaint() {
                           <span>2. Triage & Smart Routing</span>
                         </div>
                         <p className="text-[10px] text-emerald-700 mt-1">
-                          Rekomendasi: {ticket.routing.recommendedDepartment.departmentName}
+                          Rekomendasi: {ticket.routing.recommendedDepartment?.departmentName || 'Menunggu routing manual'}
                         </p>
                       </div>
 

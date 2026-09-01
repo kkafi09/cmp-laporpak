@@ -30,6 +30,9 @@ services:
     environment:
       - DATABASE_URL=postgresql://laporpak_user:laporpak_password@postgres:5432/laporpak_db
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - JWT_SECRET=${JWT_SECRET:-laporpak-local-development-secret}
+      - APP_ENV=${APP_ENV:-development}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:5173}
       - PYTHONUNBUFFERED=1
     ports:
       - "8000:8000"

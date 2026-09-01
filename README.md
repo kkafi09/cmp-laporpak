@@ -50,7 +50,7 @@ pnpm db:revision -m "tambah_kolom_baru"
 # 3. Rollback migrasi terakhir
 pnpm db:rollback
 
-# 4. Inisialisasi & Seeding data awal
+# 4. Inisialisasi katalog OPD & pengaturan sistem
 pnpm db:seed
 ```
 

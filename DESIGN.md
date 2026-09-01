@@ -205,7 +205,7 @@ laporpak/
     │   ├── package.json
     │   ├── src/
     │   │   ├── constants.ts       # OPD Definitions, Urgency Enums, SLA Targets
-    │   │   └── mock-data.ts       # 20+ Realistis SP4N-LAPOR! Dataset Kasus Nyata
+    │   │   └── types.ts           # Kontrak data lintas frontend/backend
     │   └── tsconfig.json
     │
     └── config/                    # Shared ESLint, Prettier, Tailwind Configs

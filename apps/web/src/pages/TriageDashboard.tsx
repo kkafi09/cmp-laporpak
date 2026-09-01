@@ -91,7 +91,7 @@ export function TriageDashboard() {
         )
       );
       setActionSuccessMessage(
-        `Tiket #${currentTicket.id} berhasil diverifikasi & didisposisikan ke ${currentTicket.routing.recommendedDepartment.departmentName}`
+        `Tiket #${currentTicket.id} berhasil diverifikasi & didisposisikan ke ${currentTicket.routing.recommendedDepartment?.departmentName || currentTicket.assignedOpdName || 'OPD tujuan'}`
       );
       setTimeout(() => setActionSuccessMessage(null), 4000);
     } catch (err) {
@@ -325,12 +325,12 @@ export function TriageDashboard() {
                       <div className="flex items-center space-x-1 font-medium text-slateNavy-700">
                         <Building2 className="w-3.5 h-3.5 text-brand-primary" />
                         <span className="truncate max-w-[170px]">
-                          {ticket.routing.recommendedDepartment.departmentName}
+                          {ticket.routing.recommendedDepartment?.departmentName || 'Menunggu routing manual'}
                         </span>
                       </div>
                       <div className="flex items-center space-x-1">
                         <span className="font-bold text-emerald-600">
-                          {Math.round(ticket.routing.recommendedDepartment.confidenceScore * 100)}%
+                          {ticket.routing.recommendedDepartment ? `${Math.round(ticket.routing.recommendedDepartment.confidenceScore * 100)}%` : 'Manual'}
                         </span>
                       </div>
                     </div>
@@ -449,21 +449,21 @@ export function TriageDashboard() {
                       Explainable Smart Routing (XAI)
                     </div>
                     <span className="text-xs font-extrabold text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full">
-                      {Math.round(currentTicket.routing.recommendedDepartment.confidenceScore * 100)}% Confidence
+                      {currentTicket.routing.recommendedDepartment ? `${Math.round(currentTicket.routing.recommendedDepartment.confidenceScore * 100)}% Confidence` : 'Menunggu routing manual'}
                     </span>
                   </div>
                   <div className="text-sm font-extrabold text-slateNavy-900 flex items-center space-x-1.5">
                     <Building2 className="w-4 h-4 text-brand-primary" />
-                    <span>{currentTicket.routing.recommendedDepartment.departmentName}</span>
+                    <span>{currentTicket.routing.recommendedDepartment?.departmentName || 'Belum ada OPD tujuan'}</span>
                   </div>
                   <p className="text-xs text-slateNavy-600 mt-1.5 leading-relaxed italic">
-                    "{currentTicket.routing.recommendedDepartment.reasoning}"
+                    "{currentTicket.routing.recommendedDepartment?.reasoning || currentTicket.routing.recommendedDepartment === null ? 'Belum ada rule routing yang cocok.' : ''}"
                   </p>
                 </div>
                 <div className="mt-3 pt-3 border-t border-slate-200 flex items-center justify-between text-[11px]">
                   <span className="text-slateNavy-500 font-medium">Tingkat Yurisdiksi:</span>
                   <span className="font-semibold text-slateNavy-800">
-                    {currentTicket.routing.recommendedDepartment.jurisdictionLevel}
+                    {currentTicket.routing.recommendedDepartment?.jurisdictionLevel || 'Manual routing'}
                   </span>
                 </div>
               </div>
@@ -499,12 +499,12 @@ export function TriageDashboard() {
               <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
                 {currentTicket.status === 'DISPATCHED' && <button onClick={() => handleStatus('IN_PROGRESS')} className="px-4 py-2.5 rounded-xl border border-blue-200 text-blue-700 text-xs font-bold">Mulai Proses</button>}
                 {currentTicket.status === 'IN_PROGRESS' && <button onClick={() => handleStatus('RESOLVED')} className="px-4 py-2.5 rounded-xl border border-emerald-200 text-emerald-700 text-xs font-bold">Tandai Selesai</button>}
-                {currentTicket.status === 'PENDING_APPROVAL' && <button onClick={handleOverride} className="px-4 py-2.5 rounded-xl border border-amber-200 text-amber-700 text-xs font-bold">Override OPD</button>}
+                {currentTicket.status === 'PENDING_APPROVAL' && currentTicket.routing.recommendedDepartment && <button onClick={handleOverride} className="px-4 py-2.5 rounded-xl border border-amber-200 text-amber-700 text-xs font-bold">Override OPD</button>}
                 {currentTicket.status === 'PENDING_APPROVAL' && currentTicket.deduplication.isDuplicateSuspect && <button onClick={handleMerge} className="px-4 py-2.5 rounded-xl border border-purple-200 text-purple-700 text-xs font-bold">Gabungkan Duplicate</button>}
                 {currentTicket.status === 'PENDING_APPROVAL' && <button onClick={handleReject} className="px-4 py-2.5 rounded-xl border border-rose-200 text-rose-700 text-xs font-bold">Tolak</button>}
                 <button
                   onClick={handleApprove}
-                  disabled={currentTicket.status !== 'PENDING_APPROVAL'}
+                  disabled={currentTicket.status !== 'PENDING_APPROVAL' || !currentTicket.routing.recommendedDepartment}
                   className="flex-1 sm:flex-none px-5 py-2.5 rounded-xl bg-brand-primary hover:bg-brand-primary-hover disabled:opacity-50 text-white text-xs font-bold shadow-glow-red flex items-center justify-center space-x-2 transition-all transform active:scale-95"
                 >
                   <CheckCircle2 className="w-4 h-4" />

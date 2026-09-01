@@ -3,6 +3,7 @@ export type UrgencyLevel = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
 export type TicketStatus =
   | 'PENDING_TRIAGE'
   | 'PENDING_APPROVAL'
+  | 'PENDING_MANUAL_ROUTING'
   | 'DISPATCHED'
   | 'IN_PROGRESS'
   | 'RESOLVED'
@@ -62,7 +63,7 @@ export interface DepartmentRecommendation {
 }
 
 export interface SmartRouting {
-  recommendedDepartment: DepartmentRecommendation;
+  recommendedDepartment: DepartmentRecommendation | null;
   alternativeDepartments: DepartmentRecommendation[];
 }
 
