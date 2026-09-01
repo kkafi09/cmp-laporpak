@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from app.db.database import Base, engine, SessionLocal
+from app.db.database import SessionLocal
 from app.db.models import OPD, SystemSetting
 
 # Official catalog bootstrap. Complaint and user data are never seeded automatically.
@@ -15,7 +15,6 @@ INITIAL_OPDS = [
 ]
 
 def init_db():
-    Base.metadata.create_all(bind=engine)
     db: Session = SessionLocal()
     try:
         if db.query(OPD).count() == 0:
@@ -30,3 +29,7 @@ def init_db():
         db.commit()
     finally:
         db.close()
+
+if __name__ == "__main__":
+    init_db()
+    print("Database catalog initialized")

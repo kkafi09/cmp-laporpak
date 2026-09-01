@@ -41,7 +41,7 @@ LaporPak! menggunakan **Alembic** untuk version control skema database relasiona
 ### Perintah Migrasi (Root Monorepo / PNPM):
 
 ```bash
-# 1. Menjalankan migrasi database ke versi terbaru
+# 1. Menjalankan migrasi database ke versi terbaru melalui API container
 pnpm db:migrate
 
 # 2. Membuat file revisi migrasi baru secara otomatis
@@ -50,8 +50,11 @@ pnpm db:revision -m "tambah_kolom_baru"
 # 3. Rollback migrasi terakhir
 pnpm db:rollback
 
-# 4. Inisialisasi katalog OPD & pengaturan sistem
+# 4. Inisialisasi katalog OPD & pengaturan sistem (setelah migrasi)
 pnpm db:seed
+
+# 5. Menjalankan migrasi dan inisialisasi sekaligus
+pnpm db:init
 ```
 
 *Catatan: Saat menggunakan Docker Compose, migrasi `alembic upgrade head` akan dieksekusi secara otomatis saat container backend (`api`) dinyalakan.*
@@ -63,6 +66,9 @@ pnpm db:seed
 ### Opsi 1: Menjalankan via Docker Compose (Recommended)
 ```bash
 docker compose up --build -d
+
+# Inisialisasi database (aman dijalankan berulang kali)
+pnpm db:init
 ```
 - **Portal Warga & Admin**: `http://localhost:5173`
 - **Backend API & Swagger Docs**: `http://localhost:8000/docs`
