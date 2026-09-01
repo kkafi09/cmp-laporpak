@@ -72,6 +72,7 @@ export function TriageDashboard() {
   const handleApprove = async () => {
     if (!currentTicket) return;
     try {
+      await submitHitlAction(currentTicket.id, 'UPDATE_DRAFT', { draft_body: draftText });
       await submitHitlAction(currentTicket.id, 'APPROVE');
       setTickets((prev) =>
         prev.map((t) =>
@@ -96,6 +97,34 @@ export function TriageDashboard() {
     } catch (err) {
       toast({ kind: 'error', title: 'Aksi disposisi gagal', message: 'Pastikan backend API aktif.' });
     }
+  };
+
+  const handleStatus = async (status: 'IN_PROGRESS' | 'RESOLVED') => {
+    if (!currentTicket) return;
+    try { await submitHitlAction(currentTicket.id, 'UPDATE_STATUS', { status }); await loadData(); }
+    catch (err) { toast({ kind: 'error', title: 'Status gagal diubah', message: err instanceof Error ? err.message : 'Periksa koneksi backend.' }); }
+  };
+
+  const handleReject = async () => {
+    if (!currentTicket || !window.confirm('Tolak laporan ini sebagai spam?')) return;
+    try { await submitHitlAction(currentTicket.id, 'REJECT', { reason: 'Ditolak oleh verifikator' }); await loadData(); }
+    catch (err) { toast({ kind: 'error', title: 'Penolakan gagal', message: err instanceof Error ? err.message : 'Periksa koneksi backend.' }); }
+  };
+
+  const handleOverride = async () => {
+    if (!currentTicket) return;
+    const target = window.prompt('Masukkan ID OPD tujuan (contoh: OPD-DISHUB)');
+    if (!target?.trim()) return;
+    try { await submitHitlAction(currentTicket.id, 'OVERRIDE', { target_opd_id: target.trim() }); await loadData(); }
+    catch (err) { toast({ kind: 'error', title: 'Override gagal', message: err instanceof Error ? err.message : 'OPD tidak valid.' }); }
+  };
+
+  const handleMerge = async () => {
+    if (!currentTicket) return;
+    const parent = window.prompt('Masukkan ID tiket induk duplicate');
+    if (!parent?.trim()) return;
+    try { await submitHitlAction(currentTicket.id, 'MERGE', { parent_ticket_id: parent.trim(), reason: 'Duplicate diverifikasi oleh verifikator' }); await loadData(); }
+    catch (err) { toast({ kind: 'error', title: 'Merge gagal', message: err instanceof Error ? err.message : 'Tiket induk tidak valid.' }); }
   };
 
   const handleCreateSubmit = async (e: React.FormEvent) => {
@@ -252,7 +281,7 @@ export function TriageDashboard() {
               <div className="bg-white p-8 rounded-2xl border border-dashed border-slate-300 text-center text-slateNavy-500">
                 <FileText className="w-8 h-8 mx-auto mb-2 text-slateNavy-400" />
                 <p className="text-sm font-semibold">Tidak ada aduan ditemukan</p>
-                <p className="text-xs mt-1">Klik tombol "Aduan Baru" untuk membuat simulasi aduan warga.</p>
+                <p className="text-xs mt-1">Klik tombol "Aduan Baru" untuk memasukkan laporan baru ke server.</p>
               </div>
             ) : (
               tickets.map((ticket) => {
@@ -469,10 +498,16 @@ export function TriageDashboard() {
                 <UserCheck className="w-4 h-4 text-brand-primary" />
                 <span>Keputusan Akhir berada di tangan ASN verifikator (Human-in-the-Loop).</span>
               </div>
-              <div className="flex items-center space-x-2.5 w-full sm:w-auto">
+              <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
+                {currentTicket.status === 'DISPATCHED' && <button onClick={() => handleStatus('IN_PROGRESS')} className="px-4 py-2.5 rounded-xl border border-blue-200 text-blue-700 text-xs font-bold">Mulai Proses</button>}
+                {currentTicket.status === 'IN_PROGRESS' && <button onClick={() => handleStatus('RESOLVED')} className="px-4 py-2.5 rounded-xl border border-emerald-200 text-emerald-700 text-xs font-bold">Tandai Selesai</button>}
+                {currentTicket.status === 'PENDING_APPROVAL' && <button onClick={handleOverride} className="px-4 py-2.5 rounded-xl border border-amber-200 text-amber-700 text-xs font-bold">Override OPD</button>}
+                {currentTicket.status === 'PENDING_APPROVAL' && currentTicket.deduplication.isDuplicateSuspect && <button onClick={handleMerge} className="px-4 py-2.5 rounded-xl border border-purple-200 text-purple-700 text-xs font-bold">Gabungkan Duplicate</button>}
+                {currentTicket.status === 'PENDING_APPROVAL' && <button onClick={handleReject} className="px-4 py-2.5 rounded-xl border border-rose-200 text-rose-700 text-xs font-bold">Tolak</button>}
                 <button
                   onClick={handleApprove}
-                  className="flex-1 sm:flex-none px-5 py-2.5 rounded-xl bg-brand-primary hover:bg-brand-primary-hover text-white text-xs font-bold shadow-glow-red flex items-center justify-center space-x-2 transition-all transform active:scale-95"
+                  disabled={currentTicket.status !== 'PENDING_APPROVAL'}
+                  className="flex-1 sm:flex-none px-5 py-2.5 rounded-xl bg-brand-primary hover:bg-brand-primary-hover disabled:opacity-50 text-white text-xs font-bold shadow-glow-red flex items-center justify-center space-x-2 transition-all transform active:scale-95"
                 >
                   <CheckCircle2 className="w-4 h-4" />
                   <span>Setujui & Disposisikan</span>
@@ -496,7 +531,7 @@ export function TriageDashboard() {
               <div className="flex items-center justify-between pb-4 border-b border-slate-100">
                 <div className="flex items-center space-x-2">
                   <PlusCircle className="w-5 h-5 text-brand-primary" />
-                  <h3 className="text-base font-extrabold text-slateNavy-900">Simulasi Aduan Warga Baru</h3>
+                  <h3 className="text-base font-extrabold text-slateNavy-900">Buat Aduan Baru</h3>
                 </div>
                 <button
                   onClick={() => setShowCreateModal(false)}

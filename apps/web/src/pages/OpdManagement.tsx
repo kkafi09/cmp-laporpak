@@ -6,7 +6,7 @@ import {
   Tag,
   AlertCircle
 } from 'lucide-react';
-import { fetchOpds, createOpd, OPDData } from '../services/api';
+import { fetchOpds, createOpd, updateOpd, deleteOpd, OPDData } from '../services/api';
 import { useToast } from '../components/ui/Toast';
 
 export function OpdManagement() {
@@ -68,6 +68,20 @@ export function OpdManagement() {
     } catch (err) {
       toast({ kind: 'error', title: 'OPD gagal ditambahkan', message: 'Periksa koneksi backend lalu coba lagi.' });
     }
+  };
+
+  const handleEdit = async () => {
+    if (!selectedOpd) return;
+    const name = window.prompt('Nama OPD', selectedOpd.name);
+    if (!name?.trim()) return;
+    try { await updateOpd(selectedOpd.id, { name: name.trim() }); toast({ kind: 'success', title: 'OPD diperbarui', message: 'Perubahan tersimpan.' }); await loadOpds(); }
+    catch (err) { toast({ kind: 'error', title: 'Gagal memperbarui OPD', message: err instanceof Error ? err.message : 'Periksa koneksi backend.' }); }
+  };
+
+  const handleDelete = async () => {
+    if (!selectedOpd || !window.confirm(`Nonaktifkan ${selectedOpd.name}?`)) return;
+    try { await deleteOpd(selectedOpd.id); setSelectedOpd(null); toast({ kind: 'success', title: 'OPD dinonaktifkan', message: 'OPD tidak lagi muncul untuk routing baru.' }); await loadOpds(); }
+    catch (err) { toast({ kind: 'error', title: 'Gagal menonaktifkan OPD', message: err instanceof Error ? err.message : 'Periksa koneksi backend.' }); }
   };
 
   return (
@@ -160,9 +174,13 @@ export function OpdManagement() {
                   </div>
                 </div>
 
+                <div className="flex items-center gap-2">
+                <button onClick={handleEdit} className="px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slateNavy-700">Edit</button>
+                <button onClick={handleDelete} className="px-3 py-2 rounded-xl border border-rose-200 text-xs font-bold text-rose-700">Nonaktifkan</button>
                 <div className="bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-2xl text-right">
                   <span className="text-[10px] text-emerald-600 font-bold block uppercase">Standar SLA</span>
                   <span className="text-sm font-black text-emerald-800">{selectedOpd.sla_standard_hours} Jam</span>
+                </div>
                 </div>
               </div>
 

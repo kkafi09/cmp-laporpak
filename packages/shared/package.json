@@ -1,7 +1,7 @@
 {
   "name": "@laporpak/shared",
   "version": "1.0.0",
-  "description": "Shared types, mock datasets, and constants for LaporPak! Monorepo",
+  "description": "Shared types and constants for LaporPak! Monorepo",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {

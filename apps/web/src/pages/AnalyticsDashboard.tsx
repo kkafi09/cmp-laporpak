@@ -28,27 +28,23 @@ export function AnalyticsDashboard() {
   }, []);
 
   const summary = data?.summary || {
-    total_complaints: 4,
-    dispatched_count: 2,
-    pending_count: 2,
+    total_complaints: 0,
+    dispatched_count: 0,
+    pending_count: 0,
     spam_rejected_count: 0,
-    duplicate_clusters: 1,
-    average_triage_seconds: 2.8,
-    pii_protected_count: 4,
-    ai_accuracy_percent: 94.6
+    duplicate_clusters: 0,
+    average_triage_seconds: 0,
+    pii_protected_count: 0,
+    ai_accuracy_percent: 0
   };
 
   const hitlBreakdown = data?.hitl_approval_breakdown || {
-    direct_approved_percent: 91.4,
-    adjusted_draft_percent: 5.8,
-    overridden_percent: 2.8
+    direct_approved_percent: 0,
+    adjusted_draft_percent: 0,
+    overridden_percent: 0
   };
 
-  const opdPerformance = data?.opd_performance || [
-    { name: 'Dinas Perhubungan', code: 'DISHUB', tickets_count: 2, compliance_rate: 96 },
-    { name: 'Dinas Pekerjaan Umum & PR', code: 'PUPR', tickets_count: 1, compliance_rate: 92 },
-    { name: 'Dinas Lingkungan Hidup', code: 'DLH', tickets_count: 1, compliance_rate: 94 }
-  ];
+  const opdPerformance = data?.opd_performance || [];
 
   return (
     <div className="flex-1 bg-slateNavy-50 p-4 lg:p-8 space-y-8 font-sans">

@@ -16,6 +16,7 @@
     "db:rollback": "cd apps/api && alembic downgrade -1",
     "db:revision": "cd apps/api && alembic revision --autogenerate",
     "db:seed": "cd apps/api && python -c \"from app.db.init_db import init_db; init_db()\"",
+    "admin:create": "cd apps/api && python -m app.cli",
     "build": "pnpm -r run build",
     "lint": "pnpm -r run lint"
   },

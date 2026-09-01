@@ -1,6 +1,16 @@
 import { ComplaintTicket } from '@laporpak/shared';
 
-const API_BASE_URL = 'http://localhost:8000/api/v1';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
+
+async function request(path: string, init: RequestInit = {}) {
+  const token = localStorage.getItem('laporpak_auth_token');
+  const res = await fetch(`${API_BASE_URL}${path}`, { ...init, headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(init.headers || {}) } });
+  if (!res.ok) { const body = await res.json().catch(() => ({})); throw new Error(body.detail || 'Permintaan gagal'); }
+  return res.json();
+}
+export async function loginApi(username: string, password: string) { return request('/auth/login', { method: 'POST', body: JSON.stringify({ username, password }) }); }
+export async function registerApi(payload: { name: string; email: string; phone?: string; nik?: string; password: string }) { return request('/auth/register', { method: 'POST', body: JSON.stringify(payload) }); }
+export async function meApi() { return request('/auth/me'); }
 
 export interface OPDData {
   id: string;
@@ -46,9 +56,7 @@ export async function fetchComplaints(params?: {
     if (params?.urgency && params.urgency !== 'ALL') query.append('urgency', params.urgency);
     if (params?.search) query.append('search', params.search);
 
-    const res = await fetch(`${API_BASE_URL}/complaints?${query.toString()}`);
-    if (!res.ok) throw new Error('Gagal memuat data aduan dari server');
-    return await res.json();
+    return await request(`/complaints?${query.toString()}`);
   } catch (err) {
     console.warn('Backend API connection warning:', err);
     throw err;
@@ -63,63 +71,35 @@ export async function submitNewComplaint(payload: {
   reporter_email?: string;
   channel?: string;
 }) {
-  const res = await fetch(`${API_BASE_URL}/complaints`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  });
-  if (!res.ok) throw new Error('Gagal mengirim aduan baru ke intelligence layer');
-  return await res.json();
+  return request('/complaints', { method: 'POST', body: JSON.stringify(payload) });
 }
 
 export async function submitHitlAction(
   ticketId: string,
-  action: 'APPROVE' | 'OVERRIDE' | 'REJECT' | 'MERGE',
-  extra?: { target_opd_id?: string; target_opd_name?: string }
+  action: 'APPROVE' | 'OVERRIDE' | 'REJECT' | 'MERGE' | 'UPDATE_STATUS' | 'UPDATE_DRAFT',
+  extra?: { target_opd_id?: string; target_opd_name?: string; parent_ticket_id?: string; status?: string; draft_body?: string; reason?: string }
 ) {
-  const res = await fetch(`${API_BASE_URL}/complaints/${ticketId}/action`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action, ...extra })
-  });
-  if (!res.ok) throw new Error('Gagal memproses aksi ASN');
-  return await res.json();
+  return request(`/complaints/${ticketId}/action`, { method: 'POST', body: JSON.stringify({ action, ...extra }) });
 }
 
 export async function fetchOpds(): Promise<OPDData[]> {
-  const res = await fetch(`${API_BASE_URL}/opds`);
-  if (!res.ok) throw new Error('Gagal memuat data OPD');
-  return await res.json();
+  return request('/opds');
 }
 
 export async function createOpd(payload: Partial<OPDData>) {
-  const res = await fetch(`${API_BASE_URL}/opds`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  });
-  if (!res.ok) throw new Error('Gagal menambah OPD baru');
-  return await res.json();
+  return request('/opds', { method: 'POST', body: JSON.stringify(payload) });
 }
+export async function updateOpd(id: string, payload: Partial<OPDData>) { return request(`/opds/${id}`, { method: 'PUT', body: JSON.stringify(payload) }); }
+export async function deleteOpd(id: string) { return request(`/opds/${id}`, { method: 'DELETE' }); }
 
 export async function fetchAnalytics(): Promise<AnalyticsData> {
-  const res = await fetch(`${API_BASE_URL}/analytics`);
-  if (!res.ok) throw new Error('Gagal memuat data analitik');
-  return await res.json();
+  return request('/analytics');
 }
 
 export async function fetchSettings(): Promise<Record<string, string>> {
-  const res = await fetch(`${API_BASE_URL}/settings`);
-  if (!res.ok) throw new Error('Gagal memuat konfigurasi');
-  return await res.json();
+  return request('/settings');
 }
 
 export async function saveSettings(payload: Record<string, string>) {
-  const res = await fetch(`${API_BASE_URL}/settings`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  });
-  if (!res.ok) throw new Error('Gagal menyimpan konfigurasi');
-  return await res.json();
+  return request('/settings', { method: 'POST', body: JSON.stringify(payload) });
 }

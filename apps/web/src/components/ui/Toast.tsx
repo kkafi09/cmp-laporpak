@@ -1,16 +1,16 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { CheckCircle2, Info, TriangleAlert, X } from 'lucide-react';
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
-import { cn } from '../../lib/utils';
+import { cn } from '@/lib/utils.ts';
 
 type ToastKind = 'success' | 'error' | 'info';
-interface ToastItem { id: number; title: string; message?: string; kind: ToastKind; }
+interface ToastItem { id: string; title: string; message?: string; kind: ToastKind; }
 interface ToastContextValue { toast: (toast: Omit<ToastItem, 'id'>) => void; }
 const ToastContext = createContext<ToastContextValue | null>(null);
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<ToastItem[]>([]);
-  const toast = useCallback((item: Omit<ToastItem, 'id'>) => { const id = Date.now() + Math.random(); setItems((current) => [...current, { ...item, id }]); window.setTimeout(() => setItems((current) => current.filter((toastItem) => toastItem.id !== id)), 4500); }, []);
+  const toast = useCallback((item: Omit<ToastItem, 'id'>) => { const id = `${Date.now()}-${crypto.randomUUID()}`; setItems((current) => [...current, { ...item, id }]); window.setTimeout(() => setItems((current) => current.filter((toastItem) => toastItem.id !== id)), 4500); }, []);
   const value = useMemo(() => ({ toast }), [toast]);
   return <ToastContext.Provider value={value}>{children}<div className="fixed bottom-4 right-4 z-[90] flex w-[min(380px,calc(100vw-2rem))] flex-col gap-2" aria-live="polite"><AnimatePresence>{items.map((item) => <ToastCard key={item.id} item={item} onClose={() => setItems((current) => current.filter((toastItem) => toastItem.id !== item.id))} />)}</AnimatePresence></div></ToastContext.Provider>;
 }

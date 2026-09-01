@@ -17,7 +17,7 @@ export function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [agreeUuPdp, setAgreeUuPdp] = useState(true);
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !email || !password) {
       toast({ kind: 'error', title: 'Form belum lengkap', message: 'Mohon lengkapi semua field wajib.' });
@@ -28,9 +28,13 @@ export function RegisterPage() {
       return;
     }
 
-    register({ name, nik, email, phone, password });
-    toast({ kind: 'success', title: 'Pendaftaran berhasil', message: 'Anda sekarang masuk sebagai warga terverifikasi.' });
-    navigate({ to: '/' });
+    try {
+      await register({ name, nik, email, phone, password });
+      toast({ kind: 'success', title: 'Pendaftaran berhasil', message: 'Akun Anda tersimpan di server.' });
+      navigate({ to: '/' });
+    } catch (err) {
+      toast({ kind: 'error', title: 'Pendaftaran gagal', message: err instanceof Error ? err.message : 'Periksa koneksi server.' });
+    }
   };
 
   return (

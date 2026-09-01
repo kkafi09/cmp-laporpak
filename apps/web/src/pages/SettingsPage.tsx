@@ -8,7 +8,7 @@ import { Checkbox } from '../components/ui/Checkbox';
 export function SettingsPage() {
   const { toast } = useToast();
   const [primaryModel, setPrimaryModel] = useState('gemini-1.5-pro');
-  const [geminiApiKey, setGeminiApiKey] = useState('AIzaSyD-••••••••••••••••••••••••');
+  const [geminiApiKey, setGeminiApiKey] = useState('');
   const [dedupThreshold, setDedupThreshold] = useState(0.65);
   const [enablePiiMasking, setEnablePiiMasking] = useState(true);
   const [isSaved, setIsSaved] = useState(false);
@@ -20,7 +20,7 @@ export function SettingsPage() {
         if (settings.primary_llm_model) setPrimaryModel(settings.primary_llm_model);
         if (settings.dedup_similarity_threshold) setDedupThreshold(parseFloat(settings.dedup_similarity_threshold));
         if (settings.enable_pii_masking) setEnablePiiMasking(settings.enable_pii_masking === 'true');
-        if (settings.gemini_api_key) setGeminiApiKey(settings.gemini_api_key);
+        if (settings.gemini_api_key && !settings.gemini_api_key.startsWith('*')) setGeminiApiKey(settings.gemini_api_key);
       })
       .catch((err) => console.error('Failed to load settings:', err));
   }, []);

@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { loginApi, registerApi } from '../services/api';
 
 export interface UserProfile {
   id: string;
@@ -7,7 +8,7 @@ export interface UserProfile {
   email: string;
   nik?: string;
   phone?: string;
-  role: 'CITIZEN' | 'ADMIN_ASN';
+  role: 'CITIZEN' | 'ADMIN_ASN' | 'SUPER_ADMIN';
   nip?: string;
   agency?: string;
 }
@@ -15,8 +16,8 @@ export interface UserProfile {
 interface AuthContextType {
   user: UserProfile | null;
   isAuthenticated: boolean;
-  login: (role: 'CITIZEN' | 'ADMIN_ASN', credentials?: { username?: string; password?: string }) => void;
-  register: (data: { name: string; nik: string; email: string; phone: string; password: string }) => void;
+  login: (role: 'CITIZEN' | 'ADMIN_ASN', credentials?: { username?: string; password?: string }) => Promise<void>;
+  register: (data: { name: string; nik: string; email: string; phone: string; password: string }) => Promise<void>;
   logout: () => void;
 }
 
@@ -25,7 +26,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<UserProfile | null>(() => {
     const saved = localStorage.getItem('laporpak_auth_user');
-    if (saved) {
+    if (saved && localStorage.getItem('laporpak_auth_token')) {
       try {
         return JSON.parse(saved);
       } catch {
@@ -43,44 +44,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [user]);
 
-  const login = (role: 'CITIZEN' | 'ADMIN_ASN', credentials?: { username?: string; password?: string }) => {
-    if (role === 'ADMIN_ASN') {
-      setUser({
-        id: 'usr-admin-01',
-        username: credentials?.username || 'hendra_asn',
-        name: 'Dr. Hendra Gunawan, M.Si',
-        email: 'hendra.gunawan@laporpak.go.id',
-        role: 'ADMIN_ASN',
-        nip: '198403152008011004',
-        agency: 'Kementerian PAN-RB / Verifikator Nasional'
-      });
-    } else {
-      setUser({
-        id: 'usr-citizen-01',
-        username: credentials?.username || 'budi_santoso',
-        name: credentials?.username || 'Budi Santoso',
-        email: 'budi.santoso@email.com',
-        nik: '3271012345670001',
-        phone: '081298765432',
-        role: 'CITIZEN'
-      });
-    }
+  const login = async (_role: 'CITIZEN' | 'ADMIN_ASN', credentials?: { username?: string; password?: string }) => {
+    if (!credentials?.username || !credentials.password) throw new Error('Username dan password wajib diisi');
+    const data = await loginApi(credentials.username, credentials.password);
+    localStorage.setItem('laporpak_auth_token', data.token);
+    setUser(data.user);
   };
 
-  const register = (data: { name: string; nik: string; email: string; phone: string; password: string }) => {
-    setUser({
-      id: 'usr-citizen-' + Date.now(),
-      username: data.email.split('@')[0],
-      name: data.name,
-      email: data.email,
-      nik: data.nik,
-      phone: data.phone,
-      role: 'CITIZEN'
-    });
+  const register = async (data: { name: string; nik: string; email: string; phone: string; password: string }) => {
+    const result = await registerApi(data);
+    localStorage.setItem('laporpak_auth_token', result.token);
+    setUser(result.user);
   };
 
   const logout = () => {
     setUser(null);
+    localStorage.removeItem('laporpak_auth_token');
   };
 
   return (

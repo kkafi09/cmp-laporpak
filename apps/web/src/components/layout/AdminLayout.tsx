@@ -1,4 +1,5 @@
 import { Link, Outlet, useRouterState, useNavigate } from '@tanstack/react-router';
+import { useEffect } from 'react';
 import {
   Inbox,
   Building2,
@@ -14,6 +15,12 @@ export function AdminLayout() {
   const currentPath = routerState.location.pathname;
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+
+  useEffect(() => {
+    if (!user || (user.role !== 'ADMIN_ASN' && user.role !== 'SUPER_ADMIN')) navigate({ to: '/login' });
+  }, [user, navigate]);
+
+  if (!user || (user.role !== 'ADMIN_ASN' && user.role !== 'SUPER_ADMIN')) return null;
 
   const navItems = [
     { label: 'Triage & Verifikasi (HITL)', to: '/admin', icon: Inbox },

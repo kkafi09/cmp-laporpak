@@ -73,6 +73,7 @@ class OPD(Base):
     jurisdiction = Column(String, default="KOTA_KABUPATEN")
     scope = Column(JSON, default=list) # Array of handled issue scopes
     sla_standard_hours = Column(Integer, default=48)
+    is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
 
@@ -83,3 +84,31 @@ class SystemSetting(Base):
     value = Column(String, nullable=False)
     description = Column(String, nullable=True)
     updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(String, primary_key=True)
+    username = Column(String, unique=True, nullable=False, index=True)
+    name = Column(String, nullable=False)
+    email = Column(String, nullable=False)
+    password_hash = Column(String, nullable=False)
+    role = Column(String, nullable=False, default="CITIZEN")
+    nip = Column(String, nullable=True)
+    agency = Column(String, nullable=True)
+    is_active = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+class AuditLog(Base):
+    __tablename__ = "audit_logs"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    actor_user_id = Column(String, nullable=True)
+    actor_name = Column(String, nullable=False)
+    action = Column(String, nullable=False)
+    entity_type = Column(String, nullable=False)
+    entity_id = Column(String, nullable=False)
+    before_value = Column(JSON, nullable=True)
+    after_value = Column(JSON, nullable=True)
+    reason = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
