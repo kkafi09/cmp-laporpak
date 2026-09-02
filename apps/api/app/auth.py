@@ -24,10 +24,12 @@ def hash_password(password: str) -> str:
 
 def verify_password(password: str, stored: str) -> bool:
     try:
-        algorithm, iterations, salt, digest = stored.split("$")
-        if algorithm != "pbkdf2_sha256": return False
-        actual = hashlib.pbkdf2_hmac("sha256", password.encode(), base64.urlsafe_b64decode(salt + "=" * (-len(salt) % 4)), int(iterations))
-        return hmac.compare_digest(_b64(actual), digest)
+        if "$" in stored:
+            algorithm, iterations, salt, digest = stored.split("$")
+            if algorithm != "pbkdf2_sha256": return False
+            actual = hashlib.pbkdf2_hmac("sha256", password.encode(), base64.urlsafe_b64decode(salt + "=" * (-len(salt) % 4)), int(iterations))
+            return hmac.compare_digest(_b64(actual), digest)
+        return hmac.compare_digest(hashlib.sha256(password.encode()).hexdigest(), stored)
     except (ValueError, binascii.Error):
         return False
 

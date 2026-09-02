@@ -48,12 +48,16 @@ export interface AnalyticsData {
 export async function fetchComplaints(params?: {
   status?: string;
   urgency?: string;
+  opd?: string;
+  category?: string;
   search?: string;
 }): Promise<ComplaintTicket[]> {
   try {
     const query = new URLSearchParams();
     if (params?.status && params.status !== 'ALL') query.append('status', params.status);
     if (params?.urgency && params.urgency !== 'ALL') query.append('urgency', params.urgency);
+    if (params?.opd && params.opd !== 'ALL') query.append('opd', params.opd);
+    if (params?.category && params.category !== 'ALL') query.append('category', params.category);
     if (params?.search) query.append('search', params.search);
 
     return await request(`/complaints?${query.toString()}`);

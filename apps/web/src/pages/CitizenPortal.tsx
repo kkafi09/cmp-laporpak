@@ -72,7 +72,11 @@ export function CitizenPortal() {
 
   useEffect(() => {
     fetchComplaints()
-      .then((data) => setRecentComplaints(data.slice(0, 4)))
+      .then((data) =>
+        setRecentComplaints(
+          data.filter((t) => !t.security.isSpam && t.status !== 'SPAM_REJECTED').slice(0, 4)
+        )
+      )
       .catch((err) => console.error('Failed to load recent complaints:', err));
   }, []);
 
