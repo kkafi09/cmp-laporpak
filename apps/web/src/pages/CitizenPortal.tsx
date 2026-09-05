@@ -524,7 +524,7 @@ export function CitizenPortal() {
             </div>
             <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm text-center transition-all hover:shadow-md">
               <div className="text-2xl sm:text-3xl font-black text-slateNavy-900">
-                {stats !== null ? `${stats.connected_agencies} Instansi` : '...'}
+                {stats !== null ? stats.connected_agencies : '...'}
               </div>
               <div className="text-xs font-bold text-slateNavy-700 mt-1">Instansi Terhubung</div>
               <div className="text-[11px] text-slateNavy-400 mt-0.5">OPD & Satuan Kerja Aktif</div>
