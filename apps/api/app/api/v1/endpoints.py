@@ -65,13 +65,16 @@ response_agent = ResponseCopilotAgent()
 
 @router.get("/public-stats")
 def get_public_stats(db: Session = Depends(get_db)):
-    total = db.query(Complaint).count()
+    # Hanya hitung aduan warga yang sah (bukan spam/bot)
+    valid_query = db.query(Complaint).filter(Complaint.is_spam == False, Complaint.status != "SPAM_REJECTED")
+    total = valid_query.count()
     opd_count = db.query(OPD).filter(OPD.is_active == True).count()
-    dispatched = db.query(Complaint).filter(Complaint.status.in_(["DISPATCHED", "IN_PROGRESS", "RESOLVED"])).count()
+    dispatched = valid_query.filter(Complaint.status.in_(["DISPATCHED", "IN_PROGRESS", "RESOLVED"])).count()
     
-    all_complaints = db.query(Complaint.routing_confidence).all()
-    if all_complaints and len(all_complaints) > 0:
-        confidences = [c[0] for c in all_complaints if c[0] is not None]
+    # Akurasi dihitung HANYA dari laporan riil yang diarahkan ke dinas
+    valid_routings = valid_query.filter(Complaint.routing_confidence > 0).all()
+    if valid_routings:
+        confidences = [c.routing_confidence for c in valid_routings if c.routing_confidence is not None]
         avg_confidence = round((sum(confidences) / len(confidences)) * 100, 1) if confidences else 94.8
     else:
         avg_confidence = 94.8
@@ -274,10 +277,10 @@ def create_complaint(payload: Dict[str, Any], db: Session = Depends(get_db)):
         urgency_reason=triage_res["urgency_reason"],
         extracted_entities=triage_res["extracted_entities"],
         sla_deadline_hours=triage_res["sla_deadline_hours"],
-        recommended_opd_id=recommended_opd["department_id"] if recommended_opd else None,
-        recommended_opd_name=recommended_opd["department_name"] if recommended_opd else None,
-        routing_confidence=recommended_opd["confidence_score"] if recommended_opd else 0,
-        routing_reasoning=recommended_opd["reasoning"] if recommended_opd else "Tidak ada rule aktif yang cocok; menunggu routing manual.",
+        recommended_opd_id=None if is_spam else (recommended_opd["department_id"] if recommended_opd else None),
+        recommended_opd_name=None if is_spam else (recommended_opd["department_name"] if recommended_opd else None),
+        routing_confidence=None if is_spam else (recommended_opd["confidence_score"] if recommended_opd else 0),
+        routing_reasoning="Tiket ditolak otomatis oleh Spam Guardrail (tidak diteruskan ke OPD)." if is_spam else (recommended_opd["reasoning"] if recommended_opd else "Tidak ada rule aktif yang cocok; menunggu routing manual."),
         response_draft_title=response_draft["draft_title"],
         response_draft_body=response_draft["draft_body"],
         response_tone=response_draft["tone"],
