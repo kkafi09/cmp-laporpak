@@ -1,19 +1,18 @@
 services:
-  # postgres + pgvector
   postgres:
     image: pgvector/pgvector:pg16
     container_name: laporpak_postgres
     restart: always
     environment:
-      POSTGRES_USER: laporpak_user
-      POSTGRES_PASSWORD: laporpak_password
-      POSTGRES_DB: laporpak_db
+      POSTGRES_USER: ${POSTGRES_USER:-laporpak_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-laporpak_password}
+      POSTGRES_DB: ${POSTGRES_DB:-laporpak_db}
     ports:
-      - "5435:5432"
+      - "127.0.0.1:5435:5432"
     volumes:
       - ./docker-volume/postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U laporpak_user -d laporpak_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-laporpak_user} -d ${POSTGRES_DB:-laporpak_db}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -22,20 +21,19 @@ services:
 
   # backend api
   api:
+    image: kkafi09/laporpak-be:latest
     build:
       context: ./apps/api
       dockerfile: Dockerfile
     container_name: laporpak_api
     restart: always
     environment:
-      - DATABASE_URL=postgresql://laporpak_user:laporpak_password@postgres:5432/laporpak_db
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-laporpak_user}:${POSTGRES_PASSWORD:-laporpak_password}@postgres:5432/${POSTGRES_DB:-laporpak_db}
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}
-      - JWT_SECRET=${JWT_SECRET:-laporpak-local-development-secret}
-      - APP_ENV=${APP_ENV:-development}
-      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:5173}
+      - JWT_SECRET=${JWT_SECRET:-laporpak-production-secret}
+      - APP_ENV=${APP_ENV:-production}
+      - CORS_ORIGINS=${CORS_ORIGINS:-https://${APP_DOMAIN:-laporpak.domain.com}}
       - PYTHONUNBUFFERED=1
-    ports:
-      - "8000:8000"
     volumes:
       - ./docker-volume/api_data:/app/data
     depends_on:
@@ -44,20 +42,29 @@ services:
     networks:
       - laporpak_net
 
-  # frontend
   web:
+    image: kkafi09/laporpak-fe:latest
     build:
       context: .
       dockerfile: ./apps/web/Dockerfile
     container_name: laporpak_web
     restart: always
-    ports:
-      - "5173:80"
     depends_on:
       - api
     networks:
       - laporpak_net
+      - jagoteknik-networks
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=jagoteknik-networks"
+      - "traefik.http.routers.laporpak.rule=Host(`${APP_DOMAIN:-laporpak.domain.com}`)"
+      - "traefik.http.routers.laporpak.entrypoints=websecure"
+      - "traefik.http.routers.laporpak.tls=true"
+      - "traefik.http.routers.laporpak.tls.certresolver=${TRAEFIK_CERTRESOLVER:-letsencrypt}"
+      - "traefik.http.services.laporpak.loadbalancer.server.port=80"
 
 networks:
   laporpak_net:
     driver: bridge
+  jagoteknik-networks:
+    external: true
