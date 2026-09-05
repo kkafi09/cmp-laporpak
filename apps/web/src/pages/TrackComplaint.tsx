@@ -5,7 +5,8 @@ import {
   CheckCircle2,
   Clock,
   FileText,
-  ArrowLeft
+  ArrowLeft,
+  Layers
 } from 'lucide-react';
 import { ComplaintTicket, URGENCY_CONFIG, UrgencyLevel } from '@laporpak/shared';
 import { fetchComplaints } from '../services/api';
@@ -18,7 +19,11 @@ export function TrackComplaint() {
   const handleSearch = async (searchTerm: string) => {
     try {
       const data = await fetchComplaints({ search: searchTerm });
-      setTickets(data);
+      // Hanya tampilkan laporan yang valid (non-spam) pada portal lacak publik
+      const legitimateTickets = data.filter(
+        (ticket) => !ticket.security.isSpam && ticket.status !== 'SPAM_REJECTED'
+      );
+      setTickets(legitimateTickets);
     } catch (err) {
       console.error('Error tracking complaints:', err);
     }
@@ -81,6 +86,17 @@ export function TrackComplaint() {
               const urgencyMeta =
                 URGENCY_CONFIG[ticket.triage.urgencyLevel as UrgencyLevel] || URGENCY_CONFIG.MEDIUM;
 
+              const parentStatus = ticket.deduplication?.parentTicketStatus || ticket.deduplication?.parentTicket?.status;
+              const isMerged = ticket.status === 'DUPLICATE_MERGED' || Boolean(ticket.deduplication?.parentTicketId);
+
+              // Jika tiket ter-merge, progres dan penyelesaiannya menyatu mengikuti tiket acuan/induk
+              const isResolved = ticket.status === 'RESOLVED' || (isMerged && parentStatus === 'RESOLVED');
+              const isInProgress = !isResolved && (ticket.status === 'IN_PROGRESS' || (isMerged && parentStatus === 'IN_PROGRESS'));
+              const isDispatched = !isResolved && !isInProgress && (ticket.status === 'DISPATCHED' || (isMerged && parentStatus === 'DISPATCHED'));
+
+              const effectiveOpdName = ticket.assignedOpdName || ticket.deduplication?.parentTicket?.assignedOpdName || 'Dinas Terkait';
+              const effectiveAsnName = ticket.approvedByAsn?.asnName || ticket.deduplication?.parentTicket?.approvedByAsn || 'ASN Verifikator';
+
               return (
                 <div key={ticket.id} className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 space-y-4">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-100 gap-2">
@@ -102,10 +118,33 @@ export function TrackComplaint() {
                     </div>
 
                     <div className="flex items-center space-x-2">
-                      {ticket.status === 'DISPATCHED' ? (
+                      {isResolved ? (
+                        <span className="bg-emerald-100 text-emerald-700 text-xs font-bold px-3 py-1 rounded-full flex items-center space-x-1">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          <span>
+                            Selesai Ditangani {isMerged && ticket.deduplication?.parentTicketId ? `(via #${ticket.deduplication.parentTicketId})` : ''}
+                          </span>
+                        </span>
+                      ) : isInProgress ? (
+                        <span className="bg-blue-100 text-blue-700 text-xs font-bold px-3 py-1 rounded-full flex items-center space-x-1">
+                          <Clock className="w-3.5 h-3.5" />
+                          <span>
+                            Sedang Ditindaklanjuti {isMerged && ticket.deduplication?.parentTicketId ? `(via #${ticket.deduplication.parentTicketId})` : ''}
+                          </span>
+                        </span>
+                      ) : isDispatched ? (
                         <span className="bg-emerald-100 text-emerald-700 text-xs font-bold px-3 py-1 rounded-full flex items-center space-x-1">
                           <CheckCircle2 className="w-3.5 h-3.5" />
                           <span>Sudah Didisposisikan</span>
+                        </span>
+                      ) : ticket.status === 'SPAM_REJECTED' ? (
+                        <span className="bg-rose-100 text-rose-700 text-xs font-bold px-3 py-1 rounded-full flex items-center space-x-1">
+                          <span>Ditolak (Spam)</span>
+                        </span>
+                      ) : isMerged ? (
+                        <span className="bg-purple-100 text-purple-700 text-xs font-bold px-3 py-1 rounded-full flex items-center space-x-1">
+                          <Layers className="w-3.5 h-3.5" />
+                          <span>Duplikat (Tergabung ke #{ticket.deduplication.parentTicketId})</span>
                         </span>
                       ) : (
                         <span className="bg-amber-100 text-amber-700 text-xs font-bold px-3 py-1 rounded-full flex items-center space-x-1">
@@ -146,26 +185,47 @@ export function TrackComplaint() {
                       </div>
 
                       <div
-                        className={`p-3 rounded-2xl border ${ticket.status === 'DISPATCHED'
+                        className={`p-3 rounded-2xl border ${isResolved || isInProgress || isDispatched
                           ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
                           : 'bg-amber-50 border-amber-200 text-amber-900'
                           }`}
                       >
                         <div className="flex items-center space-x-1.5 text-xs font-bold">
-                          {ticket.status === 'DISPATCHED' ? (
+                          {isResolved || isInProgress || isDispatched ? (
                             <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                           ) : (
                             <Clock className="w-4 h-4 text-amber-600 animate-pulse" />
                           )}
-                          <span>3. Disposisi OPD</span>
+                          <span>3. Disposisi & Penanganan OPD</span>
                         </div>
                         <p className="text-[10px] mt-1 opacity-90">
-                          {ticket.status === 'DISPATCHED'
-                            ? `Disetujui oleh ${ticket.approvedByAsn?.asnName || 'ASN Verifikator'}`
+                          {isResolved
+                            ? `Selesai ditangani oleh ${effectiveOpdName}${isMerged && ticket.deduplication?.parentTicketId ? ` (melalui tiket acuan #${ticket.deduplication.parentTicketId})` : ''}`
+                            : isInProgress
+                            ? `Sedang diproses oleh ${effectiveOpdName}`
+                            : isDispatched
+                            ? `Disetujui oleh ${effectiveAsnName}`
                             : 'Menunggu review final verifikator'}
                         </p>
                       </div>
                     </div>
+
+                    {/* Banner khusus jika laporan digabung ke tiket acuan */}
+                    {isMerged && (
+                      <div className="mt-3.5 p-3.5 bg-purple-50/80 border border-purple-200 rounded-2xl flex items-start space-x-2.5">
+                        <Layers className="w-4 h-4 text-purple-600 shrink-0 mt-0.5" />
+                        <div className="text-xs">
+                          <span className="font-bold text-purple-900">Laporan Digabungkan (Duplikasi Insiden): </span>
+                          <span className="text-purple-800 leading-relaxed">
+                            Laporan ini diidentifikasi memiliki kesamaan dengan laporan acuan{' '}
+                            <span className="font-mono font-bold text-purple-950">#{ticket.deduplication?.parentTicketId}</span>.
+                            {isResolved
+                              ? ' Penanganan lapangan pada laporan acuan tersebut telah dinyatakan SELESAI / TUNTAS, sehingga aduan Anda ini juga telah tuntas diselesaikan.'
+                              : ' Progres perbaikan teknis dan tindak lanjut lapangan disatukan mengikuti laporan acuan tersebut.'}
+                          </span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               );

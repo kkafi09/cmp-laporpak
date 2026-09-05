@@ -34,6 +34,13 @@ export interface DeduplicationInfo {
   parentTicketId?: string;
   clusterIncidentName?: string;
   duplicateCount?: number;
+  parentTicketStatus?: string;
+  parentTicket?: {
+    id: string;
+    status: string;
+    assignedOpdName?: string;
+    approvedByAsn?: string;
+  };
 }
 
 export interface ExtractedEntities {

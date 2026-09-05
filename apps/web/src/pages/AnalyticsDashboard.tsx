@@ -8,9 +8,8 @@ import {
   CheckCircle2,
   AlertTriangle,
   Building2,
-  Calendar,
-  Layers
-  ,Zap
+  Layers,
+  Zap
 } from 'lucide-react';
 import { fetchAnalytics, AnalyticsData } from '../services/api';
 
@@ -48,28 +47,6 @@ export function AnalyticsDashboard() {
 
   return (
     <div className="flex-1 bg-slateNavy-50 p-4 lg:p-8 space-y-8 font-sans">
-      {/* Top Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
-        <div>
-          <div className="flex items-center space-x-2">
-            <h1 className="text-xl font-black text-slateNavy-900">Monev & Analitik Kinerja Agentic Copilot</h1>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
-              Live Database Active
-            </span>
-          </div>
-          <p className="text-xs text-slateNavy-500 mt-1">
-            Evaluasi dampak otomasi triage, akurasi rekomendasi routing, dan kepatuhan SLA antar instansi (OPD).
-          </p>
-        </div>
-
-        <div className="flex items-center space-x-2">
-          <div className="flex items-center space-x-2 bg-slateNavy-100/70 px-3.5 py-2 rounded-2xl text-xs font-semibold text-slateNavy-700">
-            <Calendar className="w-4 h-4 text-slateNavy-400" />
-            <span>Periode: Real-Time Live Data</span>
-          </div>
-        </div>
-      </div>
-
       {/* KPI Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <motion.div

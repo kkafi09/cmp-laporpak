@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ShieldCheck,
@@ -10,15 +10,35 @@ import {
   Search,
   UserCheck,
   RefreshCw,
-  PlusCircle,
   X,
   FileText,
-  Zap, Car, Trash2
+  Zap
 } from 'lucide-react';
 import { URGENCY_CONFIG } from '@laporpak/shared';
 import { ComplaintTicket, UrgencyLevel } from '@laporpak/shared';
-import { fetchComplaints, submitNewComplaint, submitHitlAction } from '../services/api';
+import { fetchComplaints, fetchOpds, OPDData, submitHitlAction } from '../services/api';
 import { useToast } from '../components/ui/Toast';
+
+const STATUS_OPTIONS = [
+  { id: 'ALL', label: 'Semua Status' },
+  { id: 'PENDING_APPROVAL', label: 'Review (Pending)' },
+  { id: 'DISPATCHED', label: 'Terdisposisi' },
+  { id: 'IN_PROGRESS', label: 'Diproses' },
+  { id: 'RESOLVED', label: 'Selesai' },
+  { id: 'SPAM_REJECTED', label: 'Spam' },
+  { id: 'DUPLICATE_MERGED', label: 'Duplikat' }
+];
+
+const CATEGORIES = [
+  'Infrastruktur Jalan & Jembatan',
+  'Lalu Lintas & Angkutan Jalan',
+  'Kebersihan & Lingkungan Hidup',
+  'Kependudukan & Catatan Sipil',
+  'Kesehatan & Fasilitas Medis',
+  'Ketertiban Umum & Satpol PP',
+  'Pendidikan & Sekolah',
+  'Lainnya'
+];
 
 export function TriageDashboard() {
   const { toast } = useToast();
@@ -27,27 +47,30 @@ export function TriageDashboard() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [showMaskedPII, setShowMaskedPII] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [filterStatus, setFilterStatus] = useState<string>('ALL');
   const [filterUrgency, setFilterUrgency] = useState<string>('ALL');
+  const [filterOpd, setFilterOpd] = useState<string>('ALL');
+  const [filterCategory, setFilterCategory] = useState<string>('ALL');
+  const [opdList, setOpdList] = useState<OPDData[]>([]);
   const [draftText, setDraftText] = useState<string>('');
   const [actionSuccessMessage, setActionSuccessMessage] = useState<string | null>(null);
-  const [showCreateModal, setShowCreateModal] = useState<boolean>(false);
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-  // New Complaint Form State
-  const [newReporterName, setNewReporterName] = useState<string>('');
-  const [newReporterNik, setNewReporterNik] = useState<string>('');
-  const [newReporterPhone, setNewReporterPhone] = useState<string>('');
-  const [newRawContent, setNewRawContent] = useState<string>('');
+  useEffect(() => {
+    fetchOpds().then(setOpdList).catch(() => { });
+  }, []);
 
   const loadData = async () => {
     try {
       setIsLoading(true);
       const data = await fetchComplaints({
+        status: filterStatus,
         urgency: filterUrgency,
+        opd: filterOpd,
+        category: filterCategory,
         search: searchQuery
       });
       setTickets(data);
-      if (data.length > 0 && !selectedTicketId) {
+      if (data.length > 0 && (!selectedTicketId || !data.some((t) => t.id === selectedTicketId))) {
         setSelectedTicketId(data[0].id);
         setDraftText(data[0].responseCopilot.draftBody);
       }
@@ -60,7 +83,22 @@ export function TriageDashboard() {
 
   useEffect(() => {
     loadData();
-  }, [filterUrgency]);
+  }, [filterStatus, filterUrgency, filterOpd, filterCategory]);
+
+  const hasActiveFilters =
+    filterStatus !== 'ALL' ||
+    filterUrgency !== 'ALL' ||
+    filterOpd !== 'ALL' ||
+    filterCategory !== 'ALL' ||
+    searchQuery.trim() !== '';
+
+  const handleResetFilters = () => {
+    setFilterStatus('ALL');
+    setFilterUrgency('ALL');
+    setFilterOpd('ALL');
+    setFilterCategory('ALL');
+    setSearchQuery('');
+  };
 
   const currentTicket = tickets.find((t) => t.id === selectedTicketId) || tickets[0] || null;
 
@@ -72,7 +110,10 @@ export function TriageDashboard() {
   const handleApprove = async () => {
     if (!currentTicket) return;
     try {
-      await submitHitlAction(currentTicket.id, 'UPDATE_DRAFT', { draft_body: draftText });
+      const isDraftEdited = draftText.trim() !== (currentTicket.responseCopilot.draftBody || '').trim();
+      if (isDraftEdited) {
+        await submitHitlAction(currentTicket.id, 'UPDATE_DRAFT', { draft_body: draftText });
+      }
       await submitHitlAction(currentTicket.id, 'APPROVE');
       setTickets((prev) =>
         prev.map((t) =>
@@ -99,10 +140,26 @@ export function TriageDashboard() {
     }
   };
 
-  const handleStatus = async (status: 'IN_PROGRESS' | 'RESOLVED') => {
+  const handleStatusChange = async (status: string) => {
     if (!currentTicket) return;
-    try { await submitHitlAction(currentTicket.id, 'UPDATE_STATUS', { status }); await loadData(); }
-    catch (err) { toast({ kind: 'error', title: 'Status gagal diubah', message: err instanceof Error ? err.message : 'Periksa koneksi backend.' }); }
+    try {
+      await submitHitlAction(currentTicket.id, 'UPDATE_STATUS', { status });
+      setTickets((prev) =>
+        prev.map((t) => (t.id === currentTicket.id ? { ...t, status: status as any } : t))
+      );
+      toast({
+        kind: 'success',
+        title: 'Status Berhasil Diperbarui',
+        message: `Status tiket #${currentTicket.id} berhasil diperbarui.`
+      });
+      await loadData();
+    } catch (err) {
+      toast({
+        kind: 'error',
+        title: 'Status gagal diubah',
+        message: err instanceof Error ? err.message : 'Periksa koneksi backend.'
+      });
+    }
   };
 
   const handleReject = async () => {
@@ -125,64 +182,6 @@ export function TriageDashboard() {
     if (!parent?.trim()) return;
     try { await submitHitlAction(currentTicket.id, 'MERGE', { parent_ticket_id: parent.trim(), reason: 'Duplicate diverifikasi oleh verifikator' }); await loadData(); }
     catch (err) { toast({ kind: 'error', title: 'Merge gagal', message: err instanceof Error ? err.message : 'Tiket induk tidak valid.' }); }
-  };
-
-  const handleCreateSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newRawContent.trim()) {
-      toast({ kind: 'error', title: 'Isi laporan belum lengkap', message: 'Isi laporan aduan tidak boleh kosong.' });
-      return;
-    }
-
-    try {
-      setIsSubmitting(true);
-      const res = await submitNewComplaint({
-        reporter_name: newReporterName || 'Warga Masyarakat',
-        reporter_nik: newReporterNik,
-        reporter_phone: newReporterPhone,
-        raw_content: newRawContent
-      });
-
-      setShowCreateModal(false);
-      setNewRawContent('');
-      setNewReporterName('');
-      setNewReporterNik('');
-      setNewReporterPhone('');
-
-      setActionSuccessMessage(`Laporan baru #${res.ticket_id} berhasil diproses oleh Agentic Layer!`);
-      setTimeout(() => setActionSuccessMessage(null), 4000);
-
-      // Refresh list
-      await loadData();
-      setSelectedTicketId(res.ticket_id);
-    } catch (err) {
-      toast({ kind: 'error', title: 'Laporan gagal dikirim', message: 'Pastikan backend API berjalan di port 8000.' });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleQuickTemplate = (type: string) => {
-    if (type === 'jalan') {
-      setNewReporterName('Rahmat Hidayat');
-      setNewReporterNik('3271041122330005');
-      setNewReporterPhone('081234567890');
-      setNewRawContent(
-        'Lapor pak, jalan berlubang cukup dalam di Jl. Sudirman depan Bank Mandiri sangat berbahaya bagi pengendara motor. NIK saya 3271041122330005 mohon ditambal segera dinas terkait.'
-      );
-    } else if (type === 'sampah') {
-      setNewReporterName('Dewi Lestari');
-      setNewReporterNik('3271059988770006');
-      setNewReporterPhone('085699887766');
-      setNewRawContent(
-        'Tumpukan sampah liar di samping Pasar Anyar baunya menyengat dan berserakan ke jalan. Tolong armada kebersihan DLH segera mengangkut.'
-      );
-    } else if (type === 'spam') {
-      setNewReporterName('Bot Promosi');
-      setNewReporterNik('0000000000000000');
-      setNewReporterPhone('08999999999');
-      setNewRawContent('DAPATKAN DANA TUNAI PINJOL BUNGA 0% CAIR 5 MENIT DI HTTP://BIT.LY/DANA-KILAT HUB 08999999999!');
-    }
   };
 
   return (
@@ -244,38 +243,107 @@ export function TriageDashboard() {
               />
             </div>
             <button
-              onClick={() => setShowCreateModal(true)}
-              className="bg-brand-primary hover:bg-brand-primary-hover text-white text-xs font-bold px-3 py-2 rounded-xl shadow-glow-red flex items-center space-x-1 shrink-0"
-            >
-              <PlusCircle className="w-4 h-4" />
-              <span>Aduan Baru</span>
-            </button>
-            <button
               onClick={loadData}
+              title="Segarkan Data"
               className="p-2 bg-white rounded-xl border border-slate-200 text-slateNavy-700 hover:bg-slateNavy-100 shrink-0"
             >
               <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin text-brand-primary' : ''}`} />
             </button>
           </div>
 
-          {/* Filter Pills */}
-          <div className="flex items-center space-x-1.5 overflow-x-auto pb-1 text-xs">
-            {['ALL', 'CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].map((lvl) => (
-              <button
-                key={lvl}
-                onClick={() => setFilterUrgency(lvl)}
-                className={`px-3 py-1.5 rounded-xl font-semibold transition-all whitespace-nowrap ${filterUrgency === lvl
-                    ? 'bg-slateNavy-900 text-white shadow-sm'
-                    : 'bg-white text-slateNavy-700 hover:bg-slateNavy-100 border border-slate-200'
-                  }`}
+          {/* Satu Baris Filter Dropdown Lengkap: Status, Urgensi, Instansi OPD & Kategori */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 pt-0.5">
+            {/* Filter Status */}
+            <div>
+              <label className="text-[10px] font-bold text-slateNavy-500 block mb-1 truncate">Status</label>
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="w-full text-[11px] font-semibold bg-white border border-slate-200 rounded-xl px-2 py-1.5 text-slateNavy-800 outline-none focus:ring-1 focus:ring-brand-primary cursor-pointer truncate"
               >
-                {lvl === 'ALL' ? 'Semua Urgensi' : lvl}
-              </button>
-            ))}
+                {STATUS_OPTIONS.map((opt) => (
+                  <option key={opt.id} value={opt.id}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Filter Urgensi */}
+            <div>
+              <label className="text-[10px] font-bold text-slateNavy-500 block mb-1 truncate">Urgensi</label>
+              <select
+                value={filterUrgency}
+                onChange={(e) => setFilterUrgency(e.target.value)}
+                className="w-full text-[11px] font-semibold bg-white border border-slate-200 rounded-xl px-2 py-1.5 text-slateNavy-800 outline-none focus:ring-1 focus:ring-brand-primary cursor-pointer truncate"
+              >
+                <option value="ALL">Semua Urgensi</option>
+                <option value="CRITICAL">🔴 Critical</option>
+                <option value="HIGH">🟠 High</option>
+                <option value="MEDIUM">🟡 Medium</option>
+                <option value="LOW">🟢 Low</option>
+              </select>
+            </div>
+
+            {/* Filter Instansi Tujuan (OPD) */}
+            <div>
+              <label className="text-[10px] font-bold text-slateNavy-500 block mb-1 truncate">Instansi OPD</label>
+              <select
+                value={filterOpd}
+                onChange={(e) => setFilterOpd(e.target.value)}
+                className="w-full text-[11px] font-semibold bg-white border border-slate-200 rounded-xl px-2 py-1.5 text-slateNavy-800 outline-none focus:ring-1 focus:ring-brand-primary cursor-pointer truncate"
+              >
+                <option value="ALL">Semua OPD</option>
+                {opdList.map((opd) => (
+                  <option key={opd.id} value={opd.name}>
+                    {opd.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Filter Kategori Laporan */}
+            <div>
+              <label className="text-[10px] font-bold text-slateNavy-500 block mb-1 truncate">Kategori</label>
+              <select
+                value={filterCategory}
+                onChange={(e) => setFilterCategory(e.target.value)}
+                className="w-full text-[11px] font-semibold bg-white border border-slate-200 rounded-xl px-2 py-1.5 text-slateNavy-800 outline-none focus:ring-1 focus:ring-brand-primary cursor-pointer truncate"
+              >
+                <option value="ALL">Semua Kategori</option>
+                {CATEGORIES.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
+          {/* Reset Filter Bar (jika ada filter aktif) */}
+          {hasActiveFilters && (
+            <div className="flex items-center justify-between text-[11px] bg-slateNavy-100/70 py-1.5 px-3 rounded-xl border border-slate-200/80 text-slateNavy-600">
+              <span className="truncate mr-2">
+                Filter aktif: {[
+                  filterStatus !== 'ALL' && (STATUS_OPTIONS.find(p => p.id === filterStatus)?.label || filterStatus),
+                  filterUrgency !== 'ALL' && filterUrgency,
+                  filterOpd !== 'ALL' && filterOpd,
+                  filterCategory !== 'ALL' && filterCategory,
+                  searchQuery && `"${searchQuery}"`
+                ].filter(Boolean).join(' • ')}
+              </span>
+              <button
+                onClick={handleResetFilters}
+                className="text-brand-primary hover:underline font-bold flex items-center space-x-1 shrink-0"
+              >
+                <X className="w-3.5 h-3.5" />
+                <span>Reset</span>
+              </button>
+            </div>
+          )}
+
           {/* Ticket List Cards */}
-          <div className="flex-1 overflow-y-auto space-y-3 pr-1 max-h-[calc(100vh-290px)]">
+          <div className="flex-1 overflow-y-auto space-y-3 pr-1 max-h-[calc(100vh-340px)]">
             {tickets.length === 0 ? (
               <div className="bg-white p-8 rounded-2xl border border-dashed border-slate-300 text-center text-slateNavy-500">
                 <FileText className="w-8 h-8 mx-auto mb-2 text-slateNavy-400" />
@@ -292,19 +360,20 @@ export function TriageDashboard() {
                   <motion.div
                     key={ticket.id}
                     layout
-                    whileHover={{ scale: 1.01 }}
-                    whileTap={{ scale: 0.99 }}
+                    whileHover={{ scale: 1.008 }}
+                    whileTap={{ scale: 0.992 }}
                     onClick={() => handleSelectTicket(ticket)}
-                    className={`p-4 rounded-2xl cursor-pointer border transition-all duration-200 relative ${isSelected
-                        ? 'bg-white border-brand-primary shadow-glow-red ring-1 ring-brand-primary'
-                        : 'bg-white border-slate-200 hover:border-slate-300 shadow-sm'
+                    className={`p-3.5 rounded-2xl cursor-pointer border transition-all duration-200 relative ${isSelected
+                      ? 'bg-brand-primary/[0.03] border-brand-primary shadow-sm ring-1 ring-brand-primary'
+                      : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slateNavy-50/40 shadow-sm'
                       }`}
                   >
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-xs font-mono font-bold text-slateNavy-700">{ticket.id}</span>
+                    {/* Baris 1: ID Tiket, Badge Urgensi & Status */}
+                    <div className="flex items-center justify-between gap-2 mb-1.5">
+                      <div className="flex items-center space-x-1.5 min-w-0">
+                        <span className="text-xs font-mono font-bold text-slateNavy-800">{ticket.id}</span>
                         <span
-                          className="text-[10px] font-bold px-2 py-0.5 rounded-full border uppercase"
+                          className="text-[9px] font-black px-1.5 py-0.5 rounded border uppercase shrink-0"
                           style={{
                             backgroundColor: urgencyMeta.bg,
                             color: urgencyMeta.color,
@@ -314,26 +383,33 @@ export function TriageDashboard() {
                           {ticket.triage.urgencyLevel}
                         </span>
                       </div>
-                      <span className="text-[11px] text-slateNavy-400 font-medium">{ticket.channel}</span>
+
+                      <div className="shrink-0">
+                        {ticket.status === 'RESOLVED' ? (
+                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100/90 px-2 py-0.5 rounded-full">Selesai</span>
+                        ) : ticket.status === 'IN_PROGRESS' ? (
+                          <span className="text-[10px] font-bold text-blue-700 bg-blue-100/90 px-2 py-0.5 rounded-full">Diproses</span>
+                        ) : ticket.status === 'DISPATCHED' ? (
+                          <span className="text-[10px] font-bold text-teal-700 bg-teal-100/90 px-2 py-0.5 rounded-full">Terdisposisi</span>
+                        ) : ticket.status === 'SPAM_REJECTED' ? (
+                          <span className="text-[10px] font-bold text-rose-700 bg-rose-100/90 px-2 py-0.5 rounded-full">Spam</span>
+                        ) : ticket.status === 'DUPLICATE_MERGED' ? (
+                          <span className="text-[10px] font-bold text-purple-700 bg-purple-100/90 px-2 py-0.5 rounded-full">Duplikat</span>
+                        ) : (
+                          <span className="text-[10px] font-bold text-amber-700 bg-amber-100/90 px-2 py-0.5 rounded-full">Review</span>
+                        )}
+                      </div>
                     </div>
 
-                    <p className="text-xs text-slateNavy-800 line-clamp-2 leading-relaxed mb-3">
+                    {/* Baris 2: Kategori Aduan */}
+                    <div className="text-xs font-bold text-slateNavy-900 truncate mb-1">
+                      {ticket.triage.category}
+                    </div>
+
+                    {/* Baris 3: Cuplikan Ringkas Aduan (1 Baris) */}
+                    <p className="text-[11px] text-slateNavy-500 line-clamp-1 leading-normal">
                       {ticket.security.maskedContent}
                     </p>
-
-                    <div className="flex items-center justify-between text-[11px] pt-2 border-t border-slate-100 text-slateNavy-500">
-                      <div className="flex items-center space-x-1 font-medium text-slateNavy-700">
-                        <Building2 className="w-3.5 h-3.5 text-brand-primary" />
-                        <span className="truncate max-w-[170px]">
-                          {ticket.routing.recommendedDepartment?.departmentName || 'Menunggu routing manual'}
-                        </span>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <span className="font-bold text-emerald-600">
-                          {ticket.routing.recommendedDepartment ? `${Math.round(ticket.routing.recommendedDepartment.confidenceScore * 100)}%` : 'Manual'}
-                        </span>
-                      </div>
-                    </div>
                   </motion.div>
                 );
               })
@@ -346,22 +422,41 @@ export function TriageDashboard() {
           <section className="flex-1 bg-white rounded-3xl border border-slate-200 shadow-sm p-6 flex flex-col space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 gap-3">
               <div>
-                <div className="flex items-center space-x-2.5">
+                <div className="flex flex-wrap items-center gap-2.5">
                   <h2 className="text-lg font-black text-slateNavy-900">{currentTicket.id}</h2>
                   <span className="text-xs text-slateNavy-500 font-medium">({currentTicket.externalTicketId})</span>
-                  {currentTicket.status === 'DISPATCHED' ? (
-                    <span className="bg-emerald-100 text-emerald-700 text-xs font-bold px-2.5 py-0.5 rounded-full flex items-center space-x-1">
-                      <CheckCircle2 className="w-3.5 h-3.5" />
+
+                  {currentTicket.status === 'RESOLVED' ? (
+                    <span className="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-0.5 rounded-full flex items-center space-x-1">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Selesai / Tuntas</span>
+                    </span>
+                  ) : currentTicket.status === 'IN_PROGRESS' ? (
+                    <span className="bg-blue-100 text-blue-800 text-xs font-bold px-2.5 py-0.5 rounded-full flex items-center space-x-1">
+                      <Clock className="w-3.5 h-3.5 text-blue-600" />
+                      <span>Sedang Diproses OPD</span>
+                    </span>
+                  ) : currentTicket.status === 'DISPATCHED' ? (
+                    <span className="bg-teal-100 text-teal-800 text-xs font-bold px-2.5 py-0.5 rounded-full flex items-center space-x-1">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-teal-600" />
                       <span>Terdisposisi</span>
                     </span>
+                  ) : currentTicket.status === 'SPAM_REJECTED' ? (
+                    <span className="bg-rose-100 text-rose-800 text-xs font-bold px-2.5 py-0.5 rounded-full">
+                      Ditolak (Spam)
+                    </span>
+                  ) : currentTicket.status === 'DUPLICATE_MERGED' ? (
+                    <span className="bg-purple-100 text-purple-800 text-xs font-bold px-2.5 py-0.5 rounded-full">
+                      Duplikat (Merged)
+                    </span>
                   ) : (
-                    <span className="bg-amber-100 text-amber-700 text-xs font-bold px-2.5 py-0.5 rounded-full flex items-center space-x-1">
-                      <Clock className="w-3.5 h-3.5" />
+                    <span className="bg-amber-100 text-amber-800 text-xs font-bold px-2.5 py-0.5 rounded-full flex items-center space-x-1">
+                      <Clock className="w-3.5 h-3.5 text-amber-600" />
                       <span>Menunggu Review ASN</span>
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-slateNavy-500 mt-0.5">
+                <p className="text-xs text-slateNavy-500 mt-1">
                   Dilaporkan oleh: <span className="font-semibold text-slateNavy-700">{currentTicket.reporter.name}</span> • Waktu:{' '}
                   {currentTicket.reportedAt}
                 </p>
@@ -457,7 +552,7 @@ export function TriageDashboard() {
                     <span>{currentTicket.routing.recommendedDepartment?.departmentName || 'Belum ada OPD tujuan'}</span>
                   </div>
                   <p className="text-xs text-slateNavy-600 mt-1.5 leading-relaxed italic">
-                    "{currentTicket.routing.recommendedDepartment?.reasoning || currentTicket.routing.recommendedDepartment === null ? 'Belum ada rule routing yang cocok.' : ''}"
+                    "{currentTicket.routing.recommendedDepartment?.reasoning || 'Belum ada rule routing yang cocok.'}"
                   </p>
                 </div>
                 <div className="mt-3 pt-3 border-t border-slate-200 flex items-center justify-between text-[11px]">
@@ -493,147 +588,129 @@ export function TriageDashboard() {
             {/* HITL Action Bar */}
             <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-100">
               <div className="flex items-center space-x-2 text-xs text-slateNavy-500">
-                <UserCheck className="w-4 h-4 text-brand-primary" />
+                <UserCheck className="w-4 h-4 text-brand-primary shrink-0" />
                 <span>Keputusan Akhir berada di tangan ASN verifikator (Human-in-the-Loop).</span>
               </div>
               <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
-                {currentTicket.status === 'DISPATCHED' && <button onClick={() => handleStatus('IN_PROGRESS')} className="px-4 py-2.5 rounded-xl border border-blue-200 text-blue-700 text-xs font-bold">Mulai Proses</button>}
-                {currentTicket.status === 'IN_PROGRESS' && <button onClick={() => handleStatus('RESOLVED')} className="px-4 py-2.5 rounded-xl border border-emerald-200 text-emerald-700 text-xs font-bold">Tandai Selesai</button>}
-                {currentTicket.status === 'PENDING_APPROVAL' && currentTicket.routing.recommendedDepartment && <button onClick={handleOverride} className="px-4 py-2.5 rounded-xl border border-amber-200 text-amber-700 text-xs font-bold">Override OPD</button>}
-                {currentTicket.status === 'PENDING_APPROVAL' && currentTicket.deduplication.isDuplicateSuspect && <button onClick={handleMerge} className="px-4 py-2.5 rounded-xl border border-purple-200 text-purple-700 text-xs font-bold">Gabungkan Duplicate</button>}
-                {currentTicket.status === 'PENDING_APPROVAL' && <button onClick={handleReject} className="px-4 py-2.5 rounded-xl border border-rose-200 text-rose-700 text-xs font-bold">Tolak</button>}
-                <button
-                  onClick={handleApprove}
-                  disabled={currentTicket.status !== 'PENDING_APPROVAL' || !currentTicket.routing.recommendedDepartment}
-                  className="flex-1 sm:flex-none px-5 py-2.5 rounded-xl bg-brand-primary hover:bg-brand-primary-hover disabled:opacity-50 text-white text-xs font-bold shadow-glow-red flex items-center justify-center space-x-2 transition-all transform active:scale-95"
-                >
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>Setujui & Disposisikan</span>
-                </button>
+                {currentTicket.status === 'PENDING_APPROVAL' && (
+                  <>
+                    {currentTicket.routing.recommendedDepartment && (
+                      <button
+                        onClick={handleOverride}
+                        className="px-4 py-2.5 rounded-xl border border-amber-200 text-amber-700 text-xs font-bold hover:bg-amber-50 transition-colors"
+                      >
+                        Override OPD
+                      </button>
+                    )}
+                    {currentTicket.deduplication.isDuplicateSuspect && (
+                      <button
+                        onClick={handleMerge}
+                        className="px-4 py-2.5 rounded-xl border border-purple-200 text-purple-700 text-xs font-bold hover:bg-purple-50 transition-colors"
+                      >
+                        Gabungkan Duplicate
+                      </button>
+                    )}
+                    <button
+                      onClick={handleReject}
+                      className="px-4 py-2.5 rounded-xl border border-rose-200 text-rose-700 text-xs font-bold hover:bg-rose-50 transition-colors"
+                    >
+                      Tolak (Spam)
+                    </button>
+                    <button
+                      onClick={handleApprove}
+                      disabled={!currentTicket.routing.recommendedDepartment}
+                      className="flex-1 sm:flex-none px-5 py-2.5 rounded-xl bg-brand-primary hover:bg-brand-primary-hover disabled:opacity-50 text-white text-xs font-bold shadow-glow-red flex items-center justify-center space-x-2 transition-all transform active:scale-95"
+                    >
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>Setujui & Disposisikan</span>
+                    </button>
+                  </>
+                )}
+
+                {currentTicket.status === 'DISPATCHED' && (
+                  <>
+                    <button
+                      onClick={() => handleStatusChange('IN_PROGRESS')}
+                      className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center space-x-1.5 shadow-sm transition-colors"
+                    >
+                      <Clock className="w-3.5 h-3.5" />
+                      <span>Mulai Pengerjaan Lapangan</span>
+                    </button>
+                    <button
+                      onClick={() => handleStatusChange('RESOLVED')}
+                      className="px-4 py-2.5 rounded-xl border border-emerald-300 text-emerald-700 hover:bg-emerald-50 text-xs font-bold transition-colors"
+                    >
+                      Langsung Selesaikan
+                    </button>
+                  </>
+                )}
+
+                {currentTicket.status === 'IN_PROGRESS' && (
+                  <>
+                    <button
+                      onClick={() => handleStatusChange('DISPATCHED')}
+                      className="px-4 py-2.5 rounded-xl border border-slate-200 text-slateNavy-600 hover:bg-slateNavy-50 text-xs font-semibold transition-colors"
+                    >
+                      Kembalikan ke Terdisposisi
+                    </button>
+                    <button
+                      onClick={() => handleStatusChange('RESOLVED')}
+                      className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center space-x-1.5 shadow-sm transition-colors"
+                    >
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>Tandai Selesai / Tuntas</span>
+                    </button>
+                  </>
+                )}
+
+                {currentTicket.status === 'RESOLVED' && (
+                  <>
+                    <div className="px-3.5 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold flex items-center space-x-1.5">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      <span>Aduan Telah Tuntas Ditangani OPD</span>
+                    </div>
+                    <button
+                      onClick={() => handleStatusChange('IN_PROGRESS')}
+                      className="px-3.5 py-2 rounded-xl border border-slate-200 hover:border-slate-300 text-slateNavy-700 hover:bg-slateNavy-50 text-xs font-bold transition-colors"
+                    >
+                      Buka Kembali Tiket
+                    </button>
+                  </>
+                )}
+
+                {currentTicket.status === 'SPAM_REJECTED' && (
+                  <>
+                    <div className="px-3.5 py-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold flex items-center space-x-1.5">
+                      <span>Status: Laporan Ditolak (Spam)</span>
+                    </div>
+                    <button
+                      onClick={() => handleStatusChange('PENDING_APPROVAL')}
+                      className="px-3.5 py-2 rounded-xl bg-brand-primary text-white hover:bg-brand-primary-hover text-xs font-bold shadow-glow-red transition-colors"
+                    >
+                      Pulihkan ke Review
+                    </button>
+                  </>
+                )}
+
+                {currentTicket.status === 'DUPLICATE_MERGED' && (
+                  <>
+                    <div className="px-3.5 py-2 rounded-xl bg-purple-50 border border-purple-200 text-purple-700 text-xs font-bold flex items-center space-x-1.5">
+                      <span>Tergabung ke #{currentTicket.deduplication.parentTicketId || 'Induk'}</span>
+                    </div>
+                    <button
+                      onClick={() => handleStatusChange('PENDING_APPROVAL')}
+                      className="px-3.5 py-2 rounded-xl border border-slate-200 hover:border-slate-300 text-slateNavy-700 hover:bg-slateNavy-50 text-xs font-bold transition-colors"
+                    >
+                      Pisahkan (Unmerge)
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           </section>
         ) : null}
       </div>
 
-      {/* Modal Aduan Baru */}
-      <AnimatePresence>
-        {showCreateModal && (
-          <div className="fixed inset-0 z-50 bg-slateNavy-950/60 backdrop-blur-sm flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white w-full max-w-xl rounded-3xl p-6 shadow-2xl border border-slate-200 relative"
-            >
-              <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-                <div className="flex items-center space-x-2">
-                  <PlusCircle className="w-5 h-5 text-brand-primary" />
-                  <h3 className="text-base font-extrabold text-slateNavy-900">Buat Aduan Baru</h3>
-                </div>
-                <button
-                  onClick={() => setShowCreateModal(false)}
-                  className="text-slateNavy-400 hover:text-slateNavy-700 p-1"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              {/* Presets */}
-              <div className="my-4">
-                <span className="text-[11px] font-bold text-slateNavy-500 uppercase">Coba Kasus Realistis:</span>
-                <div className="flex flex-wrap gap-2 mt-1.5">
-                  <button
-                    type="button"
-                    onClick={() => handleQuickTemplate('jalan')}
-                    className="text-xs px-2.5 py-1 rounded-lg bg-slateNavy-100 hover:bg-slateNavy-200 text-slateNavy-800 font-semibold"
-                  >
-                    <Car className="inline h-3.5 w-3.5 text-brand-primary" /> Jalan Berlubang + NIK
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleQuickTemplate('sampah')}
-                    className="text-xs px-2.5 py-1 rounded-lg bg-slateNavy-100 hover:bg-slateNavy-200 text-slateNavy-800 font-semibold"
-                  >
-                    <Trash2 className="inline h-3.5 w-3.5 text-brand-primary" /> Sampah Liar Pasar
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleQuickTemplate('spam')}
-                    className="text-xs px-2.5 py-1 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-800 font-semibold"
-                  >
-                    🚫 Pinjol / Spam Bot
-                  </button>
-                </div>
-              </div>
-
-              <form onSubmit={handleCreateSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs font-bold text-slateNavy-700">Nama Pelapor</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Budi Santoso"
-                      value={newReporterName}
-                      onChange={(e) => setNewReporterName(e.target.value)}
-                      className="w-full mt-1 px-3 py-2 text-xs bg-slateNavy-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-primary/30"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-bold text-slateNavy-700">NIK (16 Digit - UU PDP)</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. 3271012345670001"
-                      value={newReporterNik}
-                      onChange={(e) => setNewReporterNik(e.target.value)}
-                      className="w-full mt-1 px-3 py-2 text-xs bg-slateNavy-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-primary/30"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-xs font-bold text-slateNavy-700">Isi Pengaduan Warga</label>
-                  <textarea
-                    rows={4}
-                    required
-                    placeholder="Tuliskan keluhan atau aduan fasilitas publik..."
-                    value={newRawContent}
-                    onChange={(e) => setNewRawContent(e.target.value)}
-                    className="w-full mt-1 p-3 text-xs bg-slateNavy-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-primary/30 leading-relaxed"
-                  />
-                </div>
-
-                <div className="flex items-center justify-end space-x-3 pt-3 border-t border-slate-100">
-                  <button
-                    type="button"
-                    onClick={() => setShowCreateModal(false)}
-                    className="px-4 py-2 text-xs font-bold text-slateNavy-600 hover:bg-slateNavy-100 rounded-xl"
-                  >
-                    Batal
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="px-5 py-2 text-xs font-bold text-white bg-brand-primary hover:bg-brand-primary-hover shadow-glow-red rounded-xl flex items-center space-x-2"
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <RefreshCw className="w-4 h-4 animate-spin" />
-                        <span>Menganalisis...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="w-4 h-4" />
-                        <span>Kirim ke AI Agent</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }
