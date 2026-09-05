@@ -1,8 +1,9 @@
 from sqlalchemy.orm import Session
 from app.db.database import SessionLocal
-from app.db.models import OPD, SystemSetting
+from app.db.models import OPD, SystemSetting, User
+from app.auth import hash_password
 
-# Official catalog bootstrap. Complaint and user data are never seeded automatically.
+# Official catalog bootstrap.
 INITIAL_OPDS = [
     {"id":"OPD-DISHUB","name":"Dinas Perhubungan","code":"DISHUB","jurisdiction":"KOTA_KABUPATEN","scope":["Lampu Lalu Lintas / APILL","Rambu Jalan","Marka Jalan","Angkutan Kota","Terminal","Kemacetan Lalu Lintas","Parkir Liar"],"sla_standard_hours":12},
     {"id":"OPD-PUPR-BINAMARGA","name":"Dinas Pekerjaan Umum & Penataan Ruang (Bina Marga)","code":"PUPR_BINAMARGA","jurisdiction":"KOTA_KABUPATEN","scope":["Jalan Berlubang / Rusak","Jembatan Rusak","Trotoar Amblas","Drainase / Saluran Air Tersumbat","Banjir Genangan"],"sla_standard_hours":24},
@@ -25,6 +26,29 @@ def init_db():
                 SystemSetting(key="dedup_similarity_threshold", value="0.65"),
                 SystemSetting(key="enable_pii_masking", value="true"),
                 SystemSetting(key="ai_provider_enabled", value="false"),
+            ])
+        if db.query(User).count() == 0:
+            db.add_all([
+                User(
+                    id="usr-admin-default",
+                    username="admin",
+                    name="Administrator ASN",
+                    email="admin@laporpak.kafi.gg",
+                    nip="198501012010011001",
+                    agency="Inspektorat / Admin",
+                    role="ADMIN_ASN",
+                    password_hash=hash_password("admin12345"),
+                    is_active=True
+                ),
+                User(
+                    id="usr-user-default",
+                    username="user",
+                    name="Warga Masyarakat",
+                    email="user@laporpak.kafi.gg",
+                    role="CITIZEN",
+                    password_hash=hash_password("user12345"),
+                    is_active=True
+                ),
             ])
         db.commit()
     finally:
