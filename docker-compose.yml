@@ -32,7 +32,7 @@ services:
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}
       - JWT_SECRET=${JWT_SECRET:-laporpak-production-secret}
       - APP_ENV=${APP_ENV:-production}
-      - CORS_ORIGINS=${CORS_ORIGINS:-https://${APP_DOMAIN:-laporpak.domain.com}}
+      - CORS_ORIGINS=${CORS_ORIGINS:-https://${APP_DOMAIN:-laporpak.kafi.gg}}
       - PYTHONUNBUFFERED=1
     volumes:
       - ./docker-volume/api_data:/app/data
@@ -57,7 +57,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=jagoteknik-networks"
-      - "traefik.http.routers.laporpak.rule=Host(`${APP_DOMAIN:-laporpak.domain.com}`)"
+      - "traefik.http.routers.laporpak.rule=Host(`${APP_DOMAIN:-laporpak.kafi.gg}`)"
       - "traefik.http.routers.laporpak.entrypoints=websecure"
       - "traefik.http.routers.laporpak.tls=true"
       - "traefik.http.routers.laporpak.tls.certresolver=${TRAEFIK_CERTRESOLVER:-letsencrypt}"
