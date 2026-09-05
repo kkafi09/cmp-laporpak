@@ -2,15 +2,15 @@
 FROM node:20-alpine AS builder
 
 WORKDIR /app
-RUN npm install -g pnpm
+RUN npm install -g pnpm@9
 
-# Copy root workspace configs
-COPY .npmrc pnpm-workspace.yaml package.json ./
+# Copy root workspace configs & lockfile
+COPY .npmrc pnpm-workspace.yaml package.json pnpm-lock.yaml ./
 COPY packages/shared/package.json ./packages/shared/
 COPY apps/web/package.json ./apps/web/
 
 # Install all workspace dependencies
-RUN pnpm install
+RUN pnpm install --frozen-lockfile
 
 # Copy shared library source & compile
 COPY packages/shared ./packages/shared
