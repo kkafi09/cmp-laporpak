@@ -592,16 +592,14 @@ export function TriageDashboard() {
                 <span>Keputusan Akhir berada di tangan ASN verifikator (Human-in-the-Loop).</span>
               </div>
               <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
-                {currentTicket.status === 'PENDING_APPROVAL' && (
+                {(currentTicket.status === 'PENDING_APPROVAL' || currentTicket.status === 'PENDING_MANUAL_ROUTING') && (
                   <>
-                    {currentTicket.routing.recommendedDepartment && (
-                      <button
-                        onClick={handleOverride}
-                        className="px-4 py-2.5 rounded-xl border border-amber-200 text-amber-700 text-xs font-bold hover:bg-amber-50 transition-colors"
-                      >
-                        Override OPD
-                      </button>
-                    )}
+                    <button
+                      onClick={handleOverride}
+                      className="px-4 py-2.5 rounded-xl border border-amber-200 text-amber-700 text-xs font-bold hover:bg-amber-50 transition-colors"
+                    >
+                      {currentTicket.routing.recommendedDepartment ? 'Override OPD' : 'Pilih OPD Manual'}
+                    </button>
                     {currentTicket.deduplication.isDuplicateSuspect && (
                       <button
                         onClick={handleMerge}
