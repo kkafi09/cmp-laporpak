@@ -22,9 +22,6 @@ services:
   # backend api
   api:
     image: kkafi09/laporpak-be:latest
-    build:
-      context: ./apps/api
-      dockerfile: Dockerfile
     container_name: laporpak_api
     restart: always
     environment:
@@ -44,9 +41,6 @@ services:
 
   web:
     image: kkafi09/laporpak-fe:latest
-    build:
-      context: .
-      dockerfile: ./apps/web/Dockerfile
     container_name: laporpak_web
     restart: always
     depends_on:
