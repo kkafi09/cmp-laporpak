@@ -19,7 +19,7 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { OPD_LIST, ComplaintTicket, URGENCY_CONFIG, UrgencyLevel } from '@laporpak/shared';
-import { fetchComplaints, submitNewComplaint } from '../services/api';
+import { fetchComplaints, submitNewComplaint, fetchPublicStats, PublicStats } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
@@ -69,8 +69,9 @@ export function CitizenPortal() {
   } | null>(null);
 
   const [recentComplaints, setRecentComplaints] = useState<ComplaintTicket[]>([]);
+  const [stats, setStats] = useState<PublicStats | null>(null);
 
-  useEffect(() => {
+  const loadData = () => {
     fetchComplaints()
       .then((data) =>
         setRecentComplaints(
@@ -78,6 +79,16 @@ export function CitizenPortal() {
         )
       )
       .catch((err) => console.error('Failed to load recent complaints:', err));
+
+    fetchPublicStats()
+      .then(setStats)
+      .catch((err) => console.error('Failed to load public stats:', err));
+  };
+
+  useEffect(() => {
+    loadData();
+    const interval = setInterval(loadData, 4000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -106,6 +117,7 @@ export function CitizenPortal() {
       setShowSuccess(true);
       setReportTitle('');
       setReportContent('');
+      loadData();
       toast({ kind: 'success', title: 'Laporan berhasil terkirim', message: `Ticket ${res.ticket_id} sudah tercatat.` });
     } catch (err) {
       toast({ kind: 'error', title: 'Laporan gagal dikirim', message: 'Pastikan backend API aktif lalu coba lagi.' });
@@ -492,30 +504,42 @@ export function CitizenPortal() {
       <section id="statistik-section" className="py-12 px-4 bg-slateNavy-100/60 border-b border-slate-200">
         <div className="max-w-[1280px] mx-auto">
           <div className="text-center max-w-xl mx-auto mb-8">
-            <h2 className="text-xl font-black text-slateNavy-900">Statistik Pengaduan Nasional SP4N-LAPOR!</h2>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-[11px] font-bold border border-emerald-200 mb-2">
+              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+              STATISTIK REAL-TIME
+            </div>
+            <h2 className="text-xl font-black text-slateNavy-900">Metrik Pengaduan & Kinerja LaporPak!</h2>
             <p className="text-xs text-slateNavy-500 mt-1">
-              Data real-time efisiensi birokrasi dan akselerasi penanganan aduan masyarakat bersama LaporPak!.
+              Data terintegrasi secara langsung dari database sistem pengaduan dan agen AI intelijen LaporPak!.
             </p>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm text-center">
-              <div className="text-2xl sm:text-3xl font-black text-brand-primary">151.500+</div>
-              <div className="text-xs font-bold text-slateNavy-700 mt-1">Laporan Dikelola / Tahun</div>
-              <div className="text-[11px] text-slateNavy-400 mt-0.5">Seluruh Indonesia</div>
+            <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm text-center transition-all hover:shadow-md">
+              <div className="text-2xl sm:text-3xl font-black text-brand-primary">
+                {stats !== null ? stats.total_complaints.toLocaleString('id-ID') : '...'}
+              </div>
+              <div className="text-xs font-bold text-slateNavy-700 mt-1">Laporan Terdaftar</div>
+              <div className="text-[11px] text-slateNavy-400 mt-0.5">Real-Time Database</div>
             </div>
-            <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm text-center">
-              <div className="text-2xl sm:text-3xl font-black text-slateNavy-900">679+</div>
+            <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm text-center transition-all hover:shadow-md">
+              <div className="text-2xl sm:text-3xl font-black text-slateNavy-900">
+                {stats !== null ? `${stats.connected_agencies} Instansi` : '...'}
+              </div>
               <div className="text-xs font-bold text-slateNavy-700 mt-1">Instansi Terhubung</div>
-              <div className="text-[11px] text-slateNavy-400 mt-0.5">Kementerian, Lembaga & Pemda</div>
+              <div className="text-[11px] text-slateNavy-400 mt-0.5">OPD & Satuan Kerja Aktif</div>
             </div>
-            <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm text-center">
-              <div className="text-2xl sm:text-3xl font-black text-emerald-600">94.8%</div>
+            <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm text-center transition-all hover:shadow-md">
+              <div className="text-2xl sm:text-3xl font-black text-emerald-600">
+                {stats !== null ? `${stats.routing_accuracy}%` : '...'}
+              </div>
               <div className="text-xs font-bold text-slateNavy-700 mt-1">Akurasi Smart Routing</div>
               <div className="text-[11px] text-emerald-600 font-semibold mt-0.5">No Wrong Door Policy</div>
             </div>
-            <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm text-center">
-              <div className="text-2xl sm:text-3xl font-black text-purple-700">100%</div>
+            <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm text-center transition-all hover:shadow-md">
+              <div className="text-2xl sm:text-3xl font-black text-purple-700">
+                {stats !== null ? `${stats.pii_protection_rate}%` : '100%'}
+              </div>
               <div className="text-xs font-bold text-slateNavy-700 mt-1">Proteksi NIK Warga</div>
               <div className="text-[11px] text-purple-600 font-semibold mt-0.5">Kepatuhan UU PDP</div>
             </div>

@@ -21,6 +21,18 @@ export interface OPDData {
   sla_standard_hours: number;
 }
 
+export interface PublicStats {
+  total_complaints: number;
+  connected_agencies: number;
+  routing_accuracy: number;
+  pii_protection_rate: number;
+  dispatched_count: number;
+}
+
+export async function fetchPublicStats(): Promise<PublicStats> {
+  return request('/public-stats');
+}
+
 export interface AnalyticsData {
   summary: {
     total_complaints: number;
